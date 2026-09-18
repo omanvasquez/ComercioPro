@@ -246,43 +246,52 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
         {!completedTicket ? (
           <div className="p-5 overflow-y-auto space-y-4 text-slate-800">
             
-            {/* Quick action pill buttons */}
-            <div className="flex items-center space-x-2 overflow-x-auto pb-1">
-              <button
-                onClick={fillExactUSD}
-                className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-xs font-bold text-slate-800 transition whitespace-nowrap flex items-center space-x-1"
-              >
-                <DollarSign className="w-3.5 h-3.5 text-emerald-600" />
-                <span>Exacto en USD</span>
-              </button>
-              <button
-                onClick={fillExactVESCash}
-                className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-xs font-bold text-slate-800 transition whitespace-nowrap flex items-center space-x-1"
-              >
-                <Banknote className="w-3.5 h-3.5 text-blue-600" />
-                <span>Exacto Efectivo Bs</span>
-              </button>
-              <button
-                onClick={fillExactPagoMovil}
-                className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-xs font-bold text-slate-800 transition whitespace-nowrap flex items-center space-x-1"
-              >
-                <Smartphone className="w-3.5 h-3.5 text-indigo-600" />
-                <span>Exacto Pago Móvil</span>
-              </button>
-              <button
-                onClick={fillExactPuntoVenta}
-                className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-xs font-bold text-slate-800 transition whitespace-nowrap flex items-center space-x-1"
-              >
-                <CreditCard className="w-3.5 h-3.5 text-amber-600" />
-                <span>Exacto Punto</span>
-              </button>
-              <button
-                onClick={fillExactFiado}
-                className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-xs font-bold text-slate-800 transition whitespace-nowrap flex items-center space-x-1"
-              >
-                <BookOpen className="w-3.5 h-3.5 text-rose-600" />
-                <span>Todo Fiado</span>
-              </button>
+            {/* Quick action buttons (Visible 2-row tactile grid) */}
+            <div className="space-y-1.5">
+              <div className="grid grid-cols-3 gap-1.5 sm:gap-2">
+                <button
+                  type="button"
+                  onClick={fillExactUSD}
+                  className="px-2 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 active:bg-slate-300 text-xs font-bold text-slate-800 transition flex items-center justify-center space-x-1 text-center"
+                >
+                  <DollarSign className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                  <span className="truncate">Exacto USD</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={fillExactVESCash}
+                  className="px-2 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 active:bg-slate-300 text-xs font-bold text-slate-800 transition flex items-center justify-center space-x-1 text-center"
+                >
+                  <Banknote className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+                  <span className="truncate">Efectivo Bs</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={fillExactPagoMovil}
+                  className="px-2 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 active:bg-slate-300 text-xs font-bold text-slate-800 transition flex items-center justify-center space-x-1 text-center"
+                >
+                  <Smartphone className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
+                  <span className="truncate">Pago Móvil</span>
+                </button>
+              </div>
+              <div className="grid grid-cols-2 gap-1.5 sm:gap-2">
+                <button
+                  type="button"
+                  onClick={fillExactPuntoVenta}
+                  className="px-2 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 active:bg-slate-300 text-xs font-bold text-slate-800 transition flex items-center justify-center space-x-1 text-center"
+                >
+                  <CreditCard className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                  <span className="truncate">Exacto Punto</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={fillExactFiado}
+                  className="px-2 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 active:bg-slate-300 text-xs font-bold text-slate-800 transition flex items-center justify-center space-x-1 text-center"
+                >
+                  <BookOpen className="w-3.5 h-3.5 text-rose-600 shrink-0" />
+                  <span className="truncate">Todo Fiado</span>
+                </button>
+              </div>
             </div>
 
             {/* Payment Fields (Universal Multi-payment) */}

@@ -73,7 +73,7 @@ export const POSView: React.FC = () => {
     <div className="h-[calc(100vh-4rem)] flex flex-col md:flex-row overflow-hidden pb-16 md:pb-0">
       
       {/* Left: Product Catalog */}
-      <div className="flex-1 flex flex-col min-w-0 bg-slate-50 border-r border-slate-200">
+      <div className="flex-1 flex flex-col min-w-0 min-h-0 overflow-hidden bg-slate-50 border-r border-slate-200">
         
         {/* Search & Categories Bar */}
         <div className="p-4 bg-white border-b border-slate-200 space-y-3 shrink-0">
