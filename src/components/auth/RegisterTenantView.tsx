@@ -28,8 +28,8 @@ export const RegisterTenantView: React.FC = () => {
         
         {/* Header */}
         <div className="text-center space-y-2">
-          <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-amber-500 to-amber-300 flex items-center justify-center mx-auto text-slate-950 shadow-lg shadow-amber-500/20">
-            <Store className="w-7 h-7" />
+          <div className="w-14 h-14 rounded-2xl bg-white p-2 flex items-center justify-center mx-auto shadow-lg shadow-slate-950/40">
+            <img src="/logo.png" alt="ComercioPro" className="w-full h-full object-contain" />
           </div>
           <h2 className="text-2xl font-black text-white tracking-tight">
             Registra tu Comercio

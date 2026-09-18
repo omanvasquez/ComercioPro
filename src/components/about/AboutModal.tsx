@@ -32,8 +32,8 @@ export const AboutModal: React.FC<AboutModalProps> = ({ isOpen, onClose }) => {
             <X className="w-5 h-5" />
           </button>
           <div className="flex items-center space-x-3">
-            <div className="w-12 h-12 rounded-xl bg-gradient-to-tr from-amber-500 to-amber-300 flex items-center justify-center shadow-lg shadow-amber-500/20">
-              <Sparkles className="w-6 h-6 text-slate-950 font-bold" />
+            <div className="w-12 h-12 rounded-xl bg-white p-2 flex items-center justify-center shadow-lg shadow-slate-950/30 shrink-0">
+              <img src="/logo.png" alt="ComercioPro" className="w-full h-full object-contain" />
             </div>
             <div>
               <h2 className="text-xl font-black tracking-tight">ComercioPro</h2>

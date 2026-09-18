@@ -54,8 +54,8 @@ const AppContent: React.FC = () => {
   if (authLoading) {
     return (
       <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center text-white space-y-4">
-        <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-amber-500 to-amber-300 flex items-center justify-center animate-pulse shadow-lg shadow-amber-500/30">
-          <Store className="w-6 h-6 text-slate-950" />
+        <div className="w-14 h-14 rounded-2xl bg-white p-2 flex items-center justify-center animate-pulse shadow-lg shadow-amber-500/20">
+          <img src="/logo.png" alt="ComercioPro" className="w-full h-full object-contain" />
         </div>
         <p className="text-xs text-slate-400 font-semibold tracking-wide">
           Cargando ComercioPro...

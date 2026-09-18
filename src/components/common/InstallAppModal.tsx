@@ -42,8 +42,8 @@ export const InstallAppModal: React.FC<InstallAppModalProps> = ({
           </button>
           
           <div className="flex items-center space-x-3">
-            <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-brand-emerald-500 to-emerald-300 flex items-center justify-center shadow-lg shadow-emerald-500/20 shrink-0">
-              <Download className="w-6 h-6 text-slate-950 font-bold" />
+            <div className="w-12 h-12 rounded-2xl bg-white p-2 flex items-center justify-center shadow-lg shadow-slate-950/30 shrink-0">
+              <img src="/logo.png" alt="ComercioPro" className="w-full h-full object-contain" />
             </div>
             <div>
               <h3 className="font-black text-lg text-white">Instalar ComercioPro</h3>

@@ -57,8 +57,8 @@ export const LoginView: React.FC = () => {
       {/* Top Bar */}
       <header className="px-6 py-5 flex items-center justify-between border-b border-slate-800/80 bg-slate-900/50 backdrop-blur-md">
         <div className="flex items-center space-x-3">
-          <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-amber-500 to-amber-300 flex items-center justify-center shadow-lg shadow-amber-500/20">
-            <Store className="w-5 h-5 text-slate-950 font-bold" />
+          <div className="w-10 h-10 rounded-2xl bg-white p-1.5 flex items-center justify-center shadow-lg shadow-slate-950/20 shrink-0">
+            <img src="/logo.png" alt="ComercioPro" className="w-full h-full object-contain" />
           </div>
           <div>
             <span className="text-lg font-black tracking-tight text-white">ComercioPro</span>
