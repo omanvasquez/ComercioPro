@@ -16,7 +16,7 @@ import { usePWAInstall } from '../../hooks/usePWAInstall';
 import { InstallAppModal } from '../common/InstallAppModal';
 
 export const LoginView: React.FC = () => {
-  const { loginWithGoogle } = useAuth();
+  const { loginWithGoogle, loginAsDemo } = useAuth();
   const {
     isInstalled,
     triggerInstall,
@@ -193,6 +193,18 @@ export const LoginView: React.FC = () => {
               <span>{isSubmitting ? 'Conectando...' : 'Iniciar Sesión con Google'}</span>
             </button>
 
+            {/* Demo / Google Play Reviewer Access */}
+            <div className="pt-1">
+              <button
+                type="button"
+                onClick={loginAsDemo}
+                className="w-full py-2.5 px-3 rounded-xl bg-slate-800/80 hover:bg-slate-700/80 text-slate-300 hover:text-white font-bold text-xs flex items-center justify-center space-x-2 border border-slate-700 transition active:scale-[0.98]"
+                title="Acceso directo a mostrador y caja con datos de prueba preconfigurados"
+              >
+                <span>🧪 Modo Demostración (Acceso de Prueba / Evaluadores)</span>
+              </button>
+            </div>
+
             <div className="pt-2 flex flex-col items-center space-y-2.5">
               <button
                 type="button"
@@ -211,10 +223,23 @@ export const LoginView: React.FC = () => {
         </div>
       </main>
 
-      {/* Footer */}
-      <footer className="px-6 py-4 text-center border-t border-slate-900 text-xs text-slate-500">
+      {/* Footer with Google Play Compliance links */}
+      <footer className="px-6 py-4 text-center border-t border-slate-900 text-xs text-slate-500 space-y-2">
+        <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1">
+          <a href="/privacidad.html" target="_blank" rel="noopener noreferrer" className="hover:text-amber-400 transition">
+            Política de Privacidad
+          </a>
+          <span className="text-slate-700">•</span>
+          <a href="/terminos.html" target="_blank" rel="noopener noreferrer" className="hover:text-amber-400 transition">
+            Términos y Condiciones
+          </a>
+          <span className="text-slate-700">•</span>
+          <a href="/eliminar-cuenta.html" target="_blank" rel="noopener noreferrer" className="hover:text-rose-400 transition">
+            Eliminación de Datos
+          </a>
+        </div>
         <p>
-          ComercioPro • Plataforma de Gestión Comercial y Punto de Venta
+          ComercioPro • Desarrollado por <a href="https://oman-vasquez.web.app/" target="_blank" rel="noopener noreferrer" className="text-slate-400 hover:underline">Oman Vásquez</a>
         </p>
       </footer>
 

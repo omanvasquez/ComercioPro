@@ -26,6 +26,7 @@ interface AuthContextType {
   needsRegistration: boolean;
   trialDaysRemaining: number;
   loginWithGoogle: () => Promise<void>;
+  loginAsDemo: () => void;
   logout: () => Promise<void>;
   registerTenant: (data: { name: string; ownerName: string; phone: string }) => Promise<void>;
   updateTenantProfile: (data: { name: string; ownerName: string; phone: string }) => Promise<void>;
@@ -236,6 +237,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const loginAsDemo = () => {
+    const demoUser = {
+      uid: 'demo_reviewer_google',
+      email: 'evaluador.google@comerciopro.app',
+      name: 'Evaluador Google Play',
+    };
+    const localSavedTenant = dbInit.getTenant();
+    const demoTenant: Tenant = {
+      id: localSavedTenant?.id || 'tenant_cojedes_01',
+      name: localSavedTenant?.name || 'Bodega Demo ComercioPro',
+      ownerName: 'Comercio Demostración',
+      ownerEmail: 'evaluador.google@comerciopro.app',
+      phone: '04124169949',
+      status: 'activo',
+      trialEndsAt: Date.now() + 365 * 24 * 60 * 60 * 1000,
+      createdAt: Date.now(),
+    };
+    setUser(demoUser);
+    setCurrentTenant(demoTenant);
+    dbInit.saveTenant(demoTenant);
+  };
+
   const logout = async () => {
     if (auth) {
       await fbSignOut(auth);
@@ -363,6 +386,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         needsRegistration,
         trialDaysRemaining,
         loginWithGoogle,
+        loginAsDemo,
         logout,
         registerTenant,
         updateTenantProfile,

@@ -264,6 +264,35 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onOpenAbout, onOpenS
           </button>
         </div>
 
+        {/* Legal & Account Deletion */}
+        <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm space-y-3">
+          <h3 className="text-sm font-bold text-slate-900 flex items-center space-x-2">
+            <ShieldCheck className="w-4 h-4 text-emerald-600" />
+            <span>Privacidad y Control de Cuenta</span>
+          </h3>
+          <p className="text-xs text-slate-500 leading-relaxed">
+            Tus datos están protegidos y bajo tu control. Puedes consultar nuestra política de privacidad o solicitar la eliminación definitiva de tu cuenta y registros comerciales.
+          </p>
+          <div className="grid grid-cols-2 gap-2 pt-1">
+            <a
+              href="/privacidad.html"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="py-2.5 px-3 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 font-bold text-xs flex items-center justify-center space-x-1.5 transition text-center"
+            >
+              <span>Privacidad</span>
+            </a>
+            <a
+              href="/eliminar-cuenta.html"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="py-2.5 px-3 rounded-xl border border-rose-200 bg-rose-50/50 hover:bg-rose-100 text-rose-700 font-bold text-xs flex items-center justify-center space-x-1.5 transition text-center"
+            >
+              <span>Eliminar Cuenta</span>
+            </a>
+          </div>
+        </div>
+
         {/* About trigger */}
         <div className="pt-2 text-center">
           <button
