@@ -36,3 +36,12 @@ yarn-error.log*
 *.sw?
 *.tsbuildinfo
 .firebase/
+
+# Android build outputs
+android-twa/.gradle/
+android-twa/build/
+android-twa/app/build/
+android-twa/local.properties
+*.aab
+*.apk
+*.keystore

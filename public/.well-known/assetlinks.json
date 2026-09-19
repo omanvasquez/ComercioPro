@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.comerciopro.app",
+      "sha256_cert_fingerprints": [
+        "A0:8A:C0:37:FF:E5:F2:BB:70:74:FA:47:4E:D4:EE:D5:96:EC:22:94:DA:CB:C0:08:A1:26:8E:1C:29:34:99:EF"
+      ]
+    }
+  }
+]

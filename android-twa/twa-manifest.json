@@ -1,0 +1,49 @@
+{
+  "packageId": "com.comerciopro.app",
+  "host": "comerciopro-app.web.app",
+  "name": "ComercioPro",
+  "launcherName": "ComercioPro",
+  "display": "standalone",
+  "themeColor": "#0F172A",
+  "themeColorDark": "#000000",
+  "navigationColor": "#000000",
+  "navigationColorDark": "#000000",
+  "navigationDividerColor": "#000000",
+  "navigationDividerColorDark": "#000000",
+  "backgroundColor": "#0F172A",
+  "enableNotifications": true,
+  "startUrl": "/",
+  "iconUrl": "https://comerciopro-app.web.app/pwa-512x512.png",
+  "maskableIconUrl": "https://comerciopro-app.web.app/pwa-512x512.png",
+  "splashScreenFadeOutDuration": 300,
+  "signingKey": {
+    "path": "/home/oman/proyectos/clientes/ComercioPro/android-twa/comerciopro.keystore",
+    "alias": "comerciopro"
+  },
+  "appVersionName": "1.0.0",
+  "appVersionCode": 1,
+  "shortcuts": [],
+  "generatorApp": "unknown",
+  "webManifestUrl": "https://comerciopro-app.web.app/manifest.webmanifest",
+  "fallbackType": "customtabs",
+  "features": {},
+  "alphaDependencies": {
+    "enabled": false
+  },
+  "enableSiteSettingsShortcut": true,
+  "isChromeOSOnly": false,
+  "isMetaQuest": false,
+  "fullScopeUrl": "https://comerciopro-app.web.app/",
+  "minSdkVersion": 21,
+  "orientation": "portrait",
+  "fingerprints": [
+    "A0:8A:C0:37:FF:E5:F2:BB:70:74:FA:47:4E:D4:EE:D5:96:EC:22:94:DA:CB:C0:08:A1:26:8E:1C:29:34:99:EF"
+  ],
+  "additionalTrustedOrigins": [],
+  "retainedBundles": [],
+  "protocolHandlers": [],
+  "fileHandlers": [],
+  "launchHandlerClientMode": "",
+  "displayOverride": [],
+  "appVersion": "1.0.0"
+}
