@@ -43,12 +43,12 @@
 ## 3. Arquitectura Multitenant, Roles y Seguridad
 *   **Autenticación:** Google Auth con persistencia local estricta (`LOCAL`). Si la bodega pasa días sin conexión a internet, la sesión local se mantiene activa en el dispositivo.
 *   **Aislamiento de Datos (Multitenant):** Cada bodega opera bajo un `tenantId` único. Todas las consultas y colecciones en Firestore están filtradas y protegidas por reglas de seguridad multitenant.
-*   **Control de Suscripción y Período de Prueba:**
-    *   *Trial de Bienvenida:* Cada nueva bodega disfruta de 7 a 14 días de prueba gratuita completa.
-    *   *Estado de Cuenta:* Si el estado es `inactivo` (suscripción vencida sin renovación), el dashboard se bloquea y se muestra la pantalla de cobro/reactivación con contacto a WhatsApp de soporte.
-*   **Rol Superadmin (Exclusivo para Oman Vásquez):**
+*   **Gestión de Acceso y Activación:**
+    *   *Acceso por Invitación:* Cada comercio es activado por el administrador del sistema.
+    *   *Estado de Cuenta:* Si el estado es `inactivo`, el dashboard se pausa hasta confirmación del administrador.
+*   **Panel de Administración (Exclusivo para Oman Vásquez):**
     *   Correo asignado: `omanjrvasquez@gmail.com`.
-    *   Vista administrativa simplificada para ver comercios registrados y conmutar el botón de estado `Activo` / `Inactivo` de cada tenant con un solo toque (la gestión de cobros y fechas maestras se administra en el sistema central externo de Oman).
+    *   Vista administrativa para consultar comercios registrados y conmutar el estado `Activo` / `Inactivo` de cada tenant con un solo toque.
 *   **Configuración Local del Negocio:** Personalización del nombre de la bodega, encargado, teléfono de contacto y mensaje predeterminado para comprobantes de WhatsApp.
 
 ---

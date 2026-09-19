@@ -65,10 +65,10 @@ En Latinoamérica, los pequeños comercios físicos necesitan velocidad y contro
 - **Instalación en PC:** Se ejecuta en su propia ventana sin barra de direcciones, brindando la apariencia de un software de caja profesional.
 - **Service Worker Activo:** Carga instantánea y soporte de operaciones en modo local.
 
-### 6. 🛡️ Arquitectura Multi-Tenant & Superadmin
-- Autenticación segura vía Google Auth.
-- Aislamiento de datos por comercio (`tenantId`).
-- Panel de control **Superadmin** para activación y gestión del período de prueba (7-14 días) o suscripción mensual de cada comercio.
+### 6. 🛡️ Seguridad y Gestión Multicomercio
+- Autenticación segura vía Google Auth y acceso rápido mediante Modo Demostración.
+- Aislamiento estricto de datos y registros por comercio (`tenantId`).
+- Control de roles y permisos para operaciones seguras de caja e inventario.
 
 ---
 
@@ -90,7 +90,7 @@ En Latinoamérica, los pequeños comercios físicos necesitan velocidad y contro
 ## 🏗️ Arquitectura del Proyecto
 
 ```text
-BodegaPro/
+ComercioPro/
 ├── public/                     # Iconos PWA, manifest y assets estáticos
 │   ├── apple-touch-icon.png    # Icono oficial para dispositivos Apple iOS
 │   ├── pwa-192x192.png         # Icono para dispositivos móviles Android
@@ -99,16 +99,16 @@ BodegaPro/
 ├── src/
 │   ├── components/
 │   │   ├── about/              # Modal "Acerca de" con perfil del desarrollador
-│   │   ├── auth/               # Login, Registro de Bodega y Aprobación
+│   │   ├── auth/               # Login, Registro y Modo Demo
 │   │   ├── common/             # Header, Sidebar, BottomNav, InstallAppModal
 │   │   ├── customers/          # Directorio de fiados, abonos y detalle inmutable
+│   │   ├── expenses/           # Registro y control de gastos operativos
 │   │   ├── inventory/          # Gestión de stock, despiece de bultos y mermas
 │   │   ├── pos/                # Terminal de cobro rápido y atajos de pago
 │   │   ├── reports/            # Informes diario, semanal, mensual y WhatsApp
-│   │   ├── settings/           # Configuración de bodega y moneda
-│   │   └── superadmin/         # Control central de suscripciones y tenants
+│   │   └── settings/           # Configuración de comercio, roles y moneda
 │   ├── context/
-│   │   ├── AuthContext.tsx     # Sesión de usuario y estado de membresía
+│   │   ├── AuthContext.tsx     # Sesión de usuario y autenticación
 │   │   ├── CartContext.tsx     # Carrito de venta y precios al vuelo
 │   │   ├── CurrencyContext.tsx # Tasa DolarAPI y override de bolívares
 │   │   ├── CustomersContext.tsx# Ledger de fiados y cuentas por cobrar
@@ -133,8 +133,8 @@ BodegaPro/
 
 1. **Clonar el repositorio:**
    ```bash
-   git clone https://github.com/omanvasquez/bodegapro.git
-   cd bodegapro
+   git clone https://github.com/omanvasquez/ComercioPro.git
+   cd ComercioPro
    ```
 
 2. **Instalar dependencias:**
