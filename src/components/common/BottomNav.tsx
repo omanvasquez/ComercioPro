@@ -1,6 +1,7 @@
 import React from 'react';
 import { ShoppingCart, Package, Users, BarChart3, Settings } from 'lucide-react';
 import { useCart } from '../../context/CartContext';
+import { useAuth } from '../../context/AuthContext';
 
 export type TabType = 'pos' | 'inventory' | 'customers' | 'reports' | 'settings';
 
@@ -11,14 +12,21 @@ interface BottomNavProps {
 
 export const BottomNav: React.FC<BottomNavProps> = ({ activeTab, setActiveTab }) => {
   const { totalItemsCount } = useCart();
+  const { isCashier } = useAuth();
 
-  const navItems = [
-    { id: 'pos' as TabType, label: 'Caja', icon: ShoppingCart, badge: totalItemsCount },
-    { id: 'inventory' as TabType, label: 'Inventario', icon: Package },
-    { id: 'customers' as TabType, label: 'Fiados', icon: Users },
-    { id: 'reports' as TabType, label: 'Informes', icon: BarChart3 },
-    { id: 'settings' as TabType, label: 'Ajustes', icon: Settings },
-  ];
+  const navItems = isCashier
+    ? [
+        { id: 'pos' as TabType, label: 'Caja', icon: ShoppingCart, badge: totalItemsCount },
+        { id: 'customers' as TabType, label: 'Fiados', icon: Users },
+        { id: 'reports' as TabType, label: 'Cierre', icon: BarChart3 },
+      ]
+    : [
+        { id: 'pos' as TabType, label: 'Caja', icon: ShoppingCart, badge: totalItemsCount },
+        { id: 'inventory' as TabType, label: 'Inventario', icon: Package },
+        { id: 'customers' as TabType, label: 'Fiados', icon: Users },
+        { id: 'reports' as TabType, label: 'Informes', icon: BarChart3 },
+        { id: 'settings' as TabType, label: 'Ajustes', icon: Settings },
+      ];
 
   return (
     <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-slate-200 px-2 py-1.5 shadow-lg">

@@ -34,7 +34,8 @@ const AppContent: React.FC = () => {
     authLoading, 
     isSubscriptionActive, 
     isPendingApproval, 
-    needsRegistration 
+    needsRegistration,
+    isCashier 
   } = useAuth();
 
   const {
@@ -49,6 +50,13 @@ const AppContent: React.FC = () => {
   const [activeTab, setActiveTab] = useState<TabType>('pos');
   const [isAboutOpen, setIsAboutOpen] = useState<boolean>(false);
   const [isSuperAdminOpen, setIsSuperAdminOpen] = useState<boolean>(false);
+
+  // Si es cajero, permitir Punto de Venta (Caja), Clientes (Fiados) y Cierre del Día
+  React.useEffect(() => {
+    if (isCashier && activeTab !== 'pos' && activeTab !== 'customers' && activeTab !== 'reports') {
+      setActiveTab('pos');
+    }
+  }, [isCashier, activeTab]);
 
   // 1. Pantalla de carga mientras se verifica el token
   if (authLoading) {
@@ -111,7 +119,7 @@ const AppContent: React.FC = () => {
           {activeTab === 'pos' && <POSView />}
           {activeTab === 'inventory' && <InventoryView />}
           {activeTab === 'customers' && <CustomersView />}
-          {activeTab === 'reports' && <ReportsView />}
+          {activeTab === 'reports' && <ReportsView onNavigateToPos={() => setActiveTab('pos')} />}
           {activeTab === 'settings' && (
             <SettingsView
               onOpenAbout={() => setIsAboutOpen(true)}

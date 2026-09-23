@@ -16,12 +16,14 @@ import {
 import { Customer } from '../../types';
 import { useCustomers } from '../../context/CustomersContext';
 import { useCurrency } from '../../context/CurrencyContext';
+import { useAuth } from '../../context/AuthContext';
 import { PaymentModal } from './PaymentModal';
 import { CustomerDetailsModal } from './CustomerDetailsModal';
 
 export const CustomersView: React.FC = () => {
   const { customers, addCustomer, updateCustomer, deleteCustomer } = useCustomers();
   const { toVES } = useCurrency();
+  const { isOwner } = useAuth();
 
   const [search, setSearch] = useState<string>('');
   const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null);
@@ -197,26 +199,30 @@ export const CustomersView: React.FC = () => {
                       >
                         {hasDebt ? 'Con Deuda' : 'Al Día'}
                       </span>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleStartEdit(customer);
-                        }}
-                        title="Editar datos del cliente"
-                        className="p-1 text-slate-400 hover:text-brand-emerald-600 hover:bg-slate-100 rounded-lg transition"
-                      >
-                        <Pencil className="w-3.5 h-3.5" />
-                      </button>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setDeletingCustomer(customer);
-                        }}
-                        title="Eliminar cliente"
-                        className="p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
+                      {isOwner && (
+                        <>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleStartEdit(customer);
+                            }}
+                            title="Editar datos del cliente"
+                            className="p-1 text-slate-400 hover:text-brand-emerald-600 hover:bg-slate-100 rounded-lg transition"
+                          >
+                            <Pencil className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setDeletingCustomer(customer);
+                            }}
+                            title="Eliminar cliente"
+                            className="p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </>
+                      )}
                     </div>
                   </div>
 

@@ -20,15 +20,21 @@ export const Sidebar: React.FC<SidebarProps> = ({
   isInstalled = false,
 }) => {
   const { totalItemsCount } = useCart();
-  const { isSuperAdmin } = useAuth();
+  const { isSuperAdmin, isCashier } = useAuth();
 
-  const navItems = [
-    { id: 'pos' as TabType, label: 'Punto de Venta (Caja)', icon: ShoppingCart, badge: totalItemsCount },
-    { id: 'inventory' as TabType, label: 'Inventario & Precios', icon: Package },
-    { id: 'customers' as TabType, label: 'Clientes & Fiados', icon: Users },
-    { id: 'reports' as TabType, label: 'Informes & Cierre', icon: BarChart3 },
-    { id: 'settings' as TabType, label: 'Configuración Local', icon: Settings },
-  ];
+  const navItems = isCashier
+    ? [
+        { id: 'pos' as TabType, label: 'Punto de Venta (Caja)', icon: ShoppingCart, badge: totalItemsCount },
+        { id: 'customers' as TabType, label: 'Clientes & Fiados', icon: Users },
+        { id: 'reports' as TabType, label: 'Cierre del Día', icon: BarChart3 },
+      ]
+    : [
+        { id: 'pos' as TabType, label: 'Punto de Venta (Caja)', icon: ShoppingCart, badge: totalItemsCount },
+        { id: 'inventory' as TabType, label: 'Inventario & Precios', icon: Package },
+        { id: 'customers' as TabType, label: 'Clientes & Fiados', icon: Users },
+        { id: 'reports' as TabType, label: 'Informes & Cierre', icon: BarChart3 },
+        { id: 'settings' as TabType, label: 'Configuración Local', icon: Settings },
+      ];
 
   return (
     <aside className="hidden md:flex flex-col w-64 bg-white border-r border-slate-200 h-[calc(100vh-4rem)] sticky top-16 select-none shrink-0">

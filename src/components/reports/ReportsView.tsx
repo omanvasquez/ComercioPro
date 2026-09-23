@@ -29,6 +29,8 @@ import { useInventory } from '../../context/InventoryContext';
 import { useCurrency } from '../../context/CurrencyContext';
 import { useExpenses } from '../../context/ExpensesContext';
 import { useAuth } from '../../context/AuthContext';
+import { useCart } from '../../context/CartContext';
+import { SaleTicket, CartItem, Product } from '../../types';
 import { 
   generateDailyClosingWhatsApp, 
   generateWeeklyReportWhatsApp, 
@@ -54,17 +56,24 @@ const wasteReasonMeta: Record<string, { label: string; icon: string; bg: string;
   otro: { label: 'Ajuste Inventario', icon: '📦', bg: 'bg-slate-100', text: 'text-slate-800' },
 };
 
-export const ReportsView: React.FC = () => {
-  const { dailySummary, weeklySalesData, weeklySummary, topSellingProducts, monthlySummary, sales, clearAllCalculations } = useReports();
+interface ReportsViewProps {
+  onNavigateToPos?: () => void;
+}
+
+export const ReportsView: React.FC<ReportsViewProps> = ({ onNavigateToPos }) => {
+  const { dailySummary, weeklySalesData, weeklySummary, topSellingProducts, monthlySummary, sales, clearAllCalculations, deleteSale } = useReports();
   const { products, wastes } = useInventory();
   const { effectiveRate } = useCurrency();
-  const { tenant } = useAuth();
+  const { tenant, isOwner, isCashier } = useAuth();
   const { todayExpenses, deleteExpense, todayExpensesByMethod } = useExpenses();
+  const { loadCartItems } = useCart();
 
   const [activeReportTab, setActiveReportTab] = useState<'daily' | 'weekly' | 'monthly'>('daily');
   const [dailyHistoryView, setDailyHistoryView] = useState<'products' | 'tickets' | 'expenses' | 'wastes'>('products');
   const [isExpenseModalOpen, setIsExpenseModalOpen] = useState<boolean>(false);
   const [isResetModalOpen, setIsResetModalOpen] = useState<boolean>(false);
+  const [ticketToDelete, setTicketToDelete] = useState<SaleTicket | null>(null);
+  const [ticketToCorrect, setTicketToCorrect] = useState<SaleTicket | null>(null);
   const [resetSuccessMessage, setResetSuccessMessage] = useState<string | null>(null);
 
   const handleConfirmReset = () => {
@@ -74,6 +83,56 @@ export const ReportsView: React.FC = () => {
     setTimeout(() => {
       setResetSuccessMessage(null);
     }, 5000);
+  };
+
+  const handleConfirmDeleteTicket = () => {
+    if (!ticketToDelete) return;
+    const res = deleteSale(ticketToDelete.id);
+    if (res.success) {
+      setResetSuccessMessage(`✓ Ticket #${ticketToDelete.ticketNumber} anulado con éxito. Se reincorporaron los productos al inventario.`);
+      setTimeout(() => setResetSuccessMessage(null), 5000);
+    }
+    setTicketToDelete(null);
+  };
+
+  const handleConfirmCorrectTicket = () => {
+    if (!ticketToCorrect) return;
+    const ticketRef = ticketToCorrect;
+    const res = deleteSale(ticketRef.id);
+    if (res.success) {
+      const restoredCartItems: CartItem[] = ticketRef.items.map((item) => {
+        const liveProd = products.find((p) => p.id === item.productId);
+        const productObj: Product = liveProd || {
+          id: item.productId,
+          tenantId: ticketRef.tenantId,
+          name: item.productName,
+          category: 'Víveres',
+          pricingMode: 'USD',
+          priceUSD: item.priceUSDAtSale,
+          priceVES: item.priceVESAtSale,
+          costUSD: item.costUSDAtSale,
+          stock: 999,
+          unit: item.unit,
+          updatedAt: Date.now(),
+        };
+
+        return {
+          product: productObj,
+          quantity: item.quantity,
+          originalPriceUSD: item.priceUSDAtSale,
+          originalPriceVES: item.priceVESAtSale,
+          finalPriceUSD: item.priceUSDAtSale,
+          finalPriceVES: item.priceVESAtSale,
+          isOverridden: false,
+        };
+      });
+
+      loadCartItems(restoredCartItems);
+      setTicketToCorrect(null);
+      if (onNavigateToPos) {
+        onNavigateToPos();
+      }
+    }
   };
 
   // Ventas de hoy
@@ -221,48 +280,57 @@ export const ReportsView: React.FC = () => {
 
         {/* Actions & Tab switcher */}
         <div className="flex flex-wrap items-center gap-2">
-          <button
-            onClick={() => setIsResetModalOpen(true)}
-            className="px-3 py-1.5 rounded-xl border border-rose-200 bg-rose-50/80 hover:bg-rose-100 text-rose-700 text-xs font-bold flex items-center space-x-1.5 transition shadow-2xs cursor-pointer active:scale-95"
-            title="Poner en cero todos los cálculos, ventas, gastos y deudas de fiado para iniciar un nuevo ciclo"
-          >
-            <RotateCcw className="w-3.5 h-3.5 text-rose-600" />
-            <span>Limpiar Cálculos</span>
-          </button>
+          {/* Botón de Limpiar Cálculos (Solo visible para el Dueño) */}
+          {isOwner && (
+            <button
+              onClick={() => setIsResetModalOpen(true)}
+              className="px-3 py-1.5 rounded-xl border border-rose-200 bg-rose-50/80 hover:bg-rose-100 text-rose-700 text-xs font-bold flex items-center space-x-1.5 transition shadow-2xs cursor-pointer active:scale-95"
+              title="Poner en cero todos los cálculos, ventas, gastos y deudas de fiado para iniciar un nuevo ciclo"
+            >
+              <RotateCcw className="w-3.5 h-3.5 text-rose-600" />
+              <span>Limpiar Cálculos</span>
+            </button>
+          )}
 
-          {/* Tab pills */}
-          <div className="flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200/80">
-            <button
-              onClick={() => setActiveReportTab('daily')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition ${
-                activeReportTab === 'daily'
-                  ? 'bg-white text-slate-900 shadow-xs'
-                  : 'text-slate-500 hover:text-slate-800'
-              }`}
-            >
-              Diario (Cierre)
-            </button>
-            <button
-              onClick={() => setActiveReportTab('weekly')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition ${
-                activeReportTab === 'weekly'
-                  ? 'bg-white text-slate-900 shadow-xs'
-                  : 'text-slate-500 hover:text-slate-800'
-              }`}
-            >
-              Semanal
-            </button>
-            <button
-              onClick={() => setActiveReportTab('monthly')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition ${
-                activeReportTab === 'monthly'
-                  ? 'bg-white text-slate-900 shadow-xs'
-                  : 'text-slate-500 hover:text-slate-800'
-              }`}
-            >
-              Mensual
-            </button>
-          </div>
+          {/* Tab pills: Solo el dueño ve Semanal y Mensual */}
+          {!isCashier ? (
+            <div className="flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200/80">
+              <button
+                onClick={() => setActiveReportTab('daily')}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition ${
+                  activeReportTab === 'daily'
+                    ? 'bg-white text-slate-900 shadow-xs'
+                    : 'text-slate-500 hover:text-slate-800'
+                }`}
+              >
+                Diario (Cierre)
+              </button>
+              <button
+                onClick={() => setActiveReportTab('weekly')}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition ${
+                  activeReportTab === 'weekly'
+                    ? 'bg-white text-slate-900 shadow-xs'
+                    : 'text-slate-500 hover:text-slate-800'
+                }`}
+              >
+                Semanal
+              </button>
+              <button
+                onClick={() => setActiveReportTab('monthly')}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition ${
+                  activeReportTab === 'monthly'
+                    ? 'bg-white text-slate-900 shadow-xs'
+                    : 'text-slate-500 hover:text-slate-800'
+                }`}
+              >
+                Mensual
+              </button>
+            </div>
+          ) : (
+            <div className="px-3 py-1.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-900 text-xs font-bold flex items-center space-x-1.5">
+              <span>Arqueo y Cierre Diario de Caja</span>
+            </div>
+          )}
         </div>
       </div>
 
@@ -704,6 +772,31 @@ export const ReportsView: React.FC = () => {
                               );
                             })}
                           </div>
+
+                          {/* Acciones para el Dueño: Corregir y Anular Ticket */}
+                          {isOwner && (
+                            <div className="pt-2 border-t border-slate-200/80 flex items-center justify-end space-x-2">
+                              <button
+                                type="button"
+                                onClick={() => setTicketToCorrect(ticket)}
+                                className="px-2.5 py-1 text-xs font-bold text-amber-800 hover:text-amber-900 bg-amber-50 hover:bg-amber-100 rounded-lg border border-amber-200/80 flex items-center space-x-1.5 transition active:scale-95 cursor-pointer shadow-2xs"
+                                title="Anular este ticket y cargar los artículos en la caja para corregirlo"
+                              >
+                                <RotateCcw className="w-3.5 h-3.5 text-amber-600" />
+                                <span>Corregir en Caja</span>
+                              </button>
+
+                              <button
+                                type="button"
+                                onClick={() => setTicketToDelete(ticket)}
+                                className="px-2.5 py-1 text-xs font-bold text-rose-700 hover:text-rose-800 bg-rose-50 hover:bg-rose-100 rounded-lg border border-rose-200/80 flex items-center space-x-1.5 transition active:scale-95 cursor-pointer shadow-2xs"
+                                title="Anular venta y devolver los productos al inventario"
+                              >
+                                <Trash2 className="w-3.5 h-3.5 text-rose-600" />
+                                <span>Anular / Devolución</span>
+                              </button>
+                            </div>
+                          )}
                         </div>
                       );
                     })
@@ -1584,6 +1677,134 @@ export const ReportsView: React.FC = () => {
               </button>
             </div>
 
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Confirmación para Anular / Devolución de Ticket */}
+      {ticketToDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/70 backdrop-blur-xs animate-fade-in">
+          <div className="bg-white rounded-3xl shadow-2xl border border-slate-200 max-w-md w-full overflow-hidden flex flex-col animate-scale-up">
+            <div className="p-5 bg-gradient-to-br from-rose-50 via-white to-amber-50 border-b border-rose-100">
+              <div className="flex items-center space-x-3">
+                <div className="w-11 h-11 rounded-2xl bg-rose-100 text-rose-600 flex items-center justify-center shrink-0 shadow-xs">
+                  <Trash2 className="w-6 h-6" />
+                </div>
+                <div>
+                  <h3 className="font-black text-base text-slate-900">
+                    ¿Anular Ticket #{ticketToDelete.ticketNumber}?
+                  </h3>
+                  <p className="text-xs text-slate-500 font-medium">
+                    Total: ${ticketToDelete.totalUSD.toFixed(2)} • Bs {ticketToDelete.totalVES.toLocaleString('es-VE', { minimumFractionDigits: 2 })}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="p-5 space-y-3.5 text-xs text-slate-600">
+              <p className="font-medium text-slate-700">
+                Al confirmar la anulación de esta venta:
+              </p>
+
+              <div className="p-3 bg-emerald-50 rounded-2xl border border-emerald-200/80 space-y-1.5">
+                <div className="flex items-center space-x-1.5 text-emerald-900 font-bold">
+                  <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                  <span>Devolución al inventario:</span>
+                </div>
+                <p className="text-emerald-800 text-[11px] leading-relaxed">
+                  Se regresarán automáticamente al stock los <strong>{ticketToDelete.items.length} artículos</strong> vendidos en este ticket.
+                </p>
+              </div>
+
+              <div className="p-3 bg-amber-50 rounded-2xl border border-amber-200/80 space-y-1.5">
+                <div className="flex items-center space-x-1.5 text-amber-900 font-bold">
+                  <RotateCcw className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                  <span>Recálculo de caja y finanzas:</span>
+                </div>
+                <p className="text-amber-800 text-[11px] leading-relaxed">
+                  El dinero cobrado se descontará del arqueo del día en curso y los informes se actualizarán al instante.
+                  {ticketToDelete.payments.some((p) => p.method === 'fiado') && (
+                    <span className="block mt-1 font-semibold text-rose-700">
+                      * Se cancelará también el cargo de fiado en la cuenta del cliente.
+                    </span>
+                  )}
+                </p>
+              </div>
+            </div>
+
+            <div className="p-4 bg-slate-50 border-t border-slate-200 flex items-center justify-end space-x-2.5">
+              <button
+                type="button"
+                onClick={() => setTicketToDelete(null)}
+                className="px-4 py-2 rounded-xl border border-slate-300 text-slate-700 hover:bg-slate-100 font-bold text-xs transition"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmDeleteTicket}
+                className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 active:scale-95 text-white font-black text-xs flex items-center space-x-1.5 shadow-md shadow-rose-600/20 transition cursor-pointer"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span>Confirmar Anulación</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Confirmación para Corregir Ticket en Caja */}
+      {ticketToCorrect && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/70 backdrop-blur-xs animate-fade-in">
+          <div className="bg-white rounded-3xl shadow-2xl border border-slate-200 max-w-md w-full overflow-hidden flex flex-col animate-scale-up">
+            <div className="p-5 bg-gradient-to-br from-amber-50 via-white to-blue-50 border-b border-amber-100">
+              <div className="flex items-center space-x-3">
+                <div className="w-11 h-11 rounded-2xl bg-amber-100 text-amber-700 flex items-center justify-center shrink-0 shadow-xs">
+                  <RotateCcw className="w-6 h-6" />
+                </div>
+                <div>
+                  <h3 className="font-black text-base text-slate-900">
+                    ¿Corregir Ticket #{ticketToCorrect.ticketNumber}?
+                  </h3>
+                  <p className="text-xs text-slate-500 font-medium">
+                    Total: ${ticketToCorrect.totalUSD.toFixed(2)} • ({ticketToCorrect.items.length} artículos)
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="p-5 space-y-3.5 text-xs text-slate-600">
+              <p className="font-medium text-slate-700">
+                Esta opción anula el ticket erróneo y carga inmediatamente sus productos al carrito de la caja:
+              </p>
+
+              <div className="p-3 bg-blue-50 rounded-2xl border border-blue-200/80 space-y-1 text-slate-700">
+                <p className="font-bold text-blue-900">¿Qué sucederá?</p>
+                <ol className="list-decimal list-inside space-y-1 text-[11px] text-blue-800">
+                  <li>El ticket actual será anulado y su stock reincorporado al inventario.</li>
+                  <li>Los mismos artículos se colocarán listos en el <strong>Punto de Venta</strong>.</li>
+                  <li>Podrás cambiar métodos de pago, agregar o quitar productos y finalizar la venta correcta.</li>
+                </ol>
+              </div>
+            </div>
+
+            <div className="p-4 bg-slate-50 border-t border-slate-200 flex items-center justify-end space-x-2.5">
+              <button
+                type="button"
+                onClick={() => setTicketToCorrect(null)}
+                className="px-4 py-2 rounded-xl border border-slate-300 text-slate-700 hover:bg-slate-100 font-bold text-xs transition"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmCorrectTicket}
+                className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 active:scale-95 text-slate-950 font-black text-xs flex items-center space-x-1.5 shadow-md shadow-amber-500/20 transition cursor-pointer"
+              >
+                <RotateCcw className="w-3.5 h-3.5" />
+                <span>Cargar a Caja y Corregir</span>
+              </button>
+            </div>
           </div>
         </div>
       )}

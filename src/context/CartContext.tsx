@@ -11,6 +11,7 @@ interface CartContextType {
   overrideItemPrice: (productId: string, newPriceUSD: number) => void;
   resetItemPrice: (productId: string) => void;
   clearCart: () => void;
+  loadCartItems: (items: CartItem[]) => void;
   totalUSD: number;
   totalVES: number;
   totalItemsCount: number;
@@ -109,7 +110,13 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     );
   };
 
-  const clearCart = () => setCart([]);
+  const clearCart = () => {
+    setCart([]);
+  };
+
+  const loadCartItems = (items: CartItem[]) => {
+    setCart(items);
+  };
 
   const { totalUSD, totalVES, totalItemsCount } = useMemo(() => {
     let usd = 0;
@@ -139,6 +146,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
         overrideItemPrice,
         resetItemPrice,
         clearCart,
+        loadCartItems,
         totalUSD,
         totalVES,
         totalItemsCount,

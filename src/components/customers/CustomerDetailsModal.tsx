@@ -35,7 +35,7 @@ export const CustomerDetailsModal: React.FC<CustomerDetailsModalProps> = ({
 }) => {
   const { getCustomerTransactions, updateCustomer, deleteCustomer } = useCustomers();
   const { toVES, effectiveRate } = useCurrency();
-  const { tenant } = useAuth();
+  const { tenant, isOwner } = useAuth();
 
   const [isEditing, setIsEditing] = useState(false);
   const [editName, setEditName] = useState(customer?.name || '');
@@ -120,34 +120,38 @@ export const CustomerDetailsModal: React.FC<CustomerDetailsModalProps> = ({
           </div>
 
           <div className="flex items-center space-x-1">
-            <button
-              onClick={() => {
-                setEditName(customer.name);
-                setEditPhone(customer.phone);
-                setEditLimit(customer.creditLimitUSD.toString());
-                setIsEditing(!isEditing);
-                setShowDeleteConfirm(false);
-              }}
-              title={isEditing ? 'Cancelar edición' : 'Editar cliente'}
-              className={`p-1.5 rounded-lg transition ${
-                isEditing 
-                  ? 'bg-brand-emerald-500 text-white' 
-                  : 'text-slate-400 hover:text-white hover:bg-slate-800'
-              }`}
-            >
-              <Pencil className="w-4 h-4" />
-            </button>
+            {isOwner && (
+              <>
+                <button
+                  onClick={() => {
+                    setEditName(customer.name);
+                    setEditPhone(customer.phone);
+                    setEditLimit(customer.creditLimitUSD.toString());
+                    setIsEditing(!isEditing);
+                    setShowDeleteConfirm(false);
+                  }}
+                  title={isEditing ? 'Cancelar edición' : 'Editar cliente'}
+                  className={`p-1.5 rounded-lg transition ${
+                    isEditing 
+                      ? 'bg-brand-emerald-500 text-white' 
+                      : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                  }`}
+                >
+                  <Pencil className="w-4 h-4" />
+                </button>
 
-            <button
-              onClick={() => {
-                setShowDeleteConfirm(true);
-                setIsEditing(false);
-              }}
-              title="Eliminar cliente"
-              className="p-1.5 text-rose-400 hover:text-rose-300 rounded-lg hover:bg-rose-950/40 transition"
-            >
-              <Trash2 className="w-4 h-4" />
-            </button>
+                <button
+                  onClick={() => {
+                    setShowDeleteConfirm(true);
+                    setIsEditing(false);
+                  }}
+                  title="Eliminar cliente"
+                  className="p-1.5 text-rose-400 hover:text-rose-300 rounded-lg hover:bg-rose-950/40 transition"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </>
+            )}
 
             <button 
               onClick={onClose} 

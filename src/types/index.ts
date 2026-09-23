@@ -1,5 +1,16 @@
 export type TenantStatus = 'pendiente' | 'trial' | 'activo' | 'inactivo';
 
+export type UserRole = 'owner' | 'cajero';
+
+export interface CashierUser {
+  id: string;
+  email: string;
+  name: string;
+  role: 'cajero';
+  createdAt: number;
+  active: boolean;
+}
+
 export interface Tenant {
   id: string;
   name: string;
@@ -10,6 +21,8 @@ export interface Tenant {
   trialEndsAt: number;
   createdAt: number;
   defaultWhatsAppMsg?: string;
+  cashiers?: CashierUser[];
+  cashierEmails?: string[];
 }
 
 export type PricingMode = 'USD' | 'VES';

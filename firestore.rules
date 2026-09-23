@@ -16,11 +16,12 @@ service cloud.firestore {
     match /tenants/{tenantId} {
       // Superadmin puede leer y escribir cualquier tenant
       allow read, write: if isSuperAdmin();
-      // El dueño del tenant puede leer sus propios datos si está autenticado
+      // El dueño del tenant o sus cajeros autorizados pueden leer sus datos
       allow read: if isAuthenticated() && (
         tenantId == request.auth.uid || 
         resource == null || 
-        resource.data.ownerEmail == request.auth.token.email
+        resource.data.ownerEmail == request.auth.token.email ||
+        (resource.data.cashierEmails != null && request.auth.token.email in resource.data.cashierEmails)
       );
       allow create: if isAuthenticated() && request.resource.data.ownerEmail == request.auth.token.email;
       allow update: if isSuperAdmin() || (isAuthenticated() && resource.data.ownerEmail == request.auth.token.email);
@@ -31,7 +32,9 @@ service cloud.firestore {
       allow read, write: if isSuperAdmin() || (
         isAuthenticated() && (
           tenantId == request.auth.uid ||
-          get(/databases/$(database)/documents/tenants/$(tenantId)).data.ownerEmail == request.auth.token.email
+          get(/databases/$(database)/documents/tenants/$(tenantId)).data.ownerEmail == request.auth.token.email ||
+          (get(/databases/$(database)/documents/tenants/$(tenantId)).data.cashierEmails != null &&
+           request.auth.token.email in get(/databases/$(database)/documents/tenants/$(tenantId)).data.cashierEmails)
         )
       );
     }

@@ -28,6 +28,7 @@ interface CustomersContextType {
     notes?: string
   ) => { success: boolean; message: string; customer?: Customer };
   getCustomerTransactions: (customerId: string) => CreditTransaction[];
+  revertSaleCharge: (ticketId: string, customerId?: string, changeCreditedUSD?: number) => void;
   resetAllDebtsAndTransactions: () => void;
 }
 
@@ -305,6 +306,51 @@ export const CustomersProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     return transactions.filter((t) => t.customerId === customerId);
   };
 
+  const revertSaleCharge = (ticketId: string, customerId?: string, changeCreditedUSD: number = 0) => {
+    const matchingTx = transactions.filter((t) => t.saleTicketId === ticketId);
+    let fiadoTotalToRevert = 0;
+    matchingTx.forEach((tx) => {
+      if (tx.type === 'cargo') {
+        fiadoTotalToRevert += tx.amountUSD;
+      }
+    });
+
+    const updatedTx = transactions.filter((t) => t.saleTicketId !== ticketId);
+    setTransactions(updatedTx);
+    dbInit.saveTransactions(updatedTx);
+
+    if (db && tenant?.id) {
+      matchingTx.forEach((tx) => {
+        deleteDoc(doc(db, 'tenants', tenant.id, 'transactions', tx.id)).catch(() => {});
+      });
+    }
+
+    const targetCustId = customerId || (matchingTx.length > 0 ? matchingTx[0].customerId : undefined);
+    if (targetCustId) {
+      setCustomers((prev) => {
+        const updated = prev.map((c) => {
+          if (c.id === targetCustId) {
+            const newDebt = Math.max(0, Math.round((c.currentDebtUSD - fiadoTotalToRevert) * 100) / 100);
+            const newBalance = Math.max(0, Math.round((c.positiveBalanceUSD - changeCreditedUSD) * 100) / 100);
+            const changed = {
+              ...c,
+              currentDebtUSD: newDebt,
+              positiveBalanceUSD: newBalance,
+              updatedAt: Date.now(),
+            };
+            if (db && tenant?.id) {
+              setDoc(doc(db, 'tenants', tenant.id, 'customers', c.id), changed).catch(() => {});
+            }
+            return changed;
+          }
+          return c;
+        });
+        dbInit.saveCustomers(updated);
+        return updated;
+      });
+    }
+  };
+
   const resetAllDebtsAndTransactions = () => {
     const updatedCustomers = customers.map((c) => ({
       ...c,
@@ -340,6 +386,7 @@ export const CustomersProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         recordCharge,
         recordPayment,
         getCustomerTransactions,
+        revertSaleCharge,
         resetAllDebtsAndTransactions,
       }}
     >

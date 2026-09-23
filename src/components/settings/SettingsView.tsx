@@ -9,7 +9,12 @@ import {
   ShieldCheck, 
   Info, 
   Download, 
-  Clock 
+  Clock,
+  Users,
+  UserPlus,
+  Trash2,
+  CheckCircle2,
+  AlertCircle
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useCurrency } from '../../context/CurrencyContext';
@@ -21,7 +26,7 @@ interface SettingsViewProps {
 }
 
 export const SettingsView: React.FC<SettingsViewProps> = ({ onOpenAbout, onOpenSuperAdmin }) => {
-  const { tenant, isSuperAdmin, trialDaysRemaining, updateTenantProfile } = useAuth();
+  const { tenant, isSuperAdmin, isOwner, cashiers, addCashier, removeCashier, trialDaysRemaining, updateTenantProfile } = useAuth();
   const { rates, setManualOverride, refreshRates, isLoading } = useCurrency();
 
   const [storeName, setStoreName] = useState<string>(tenant?.name || '');
@@ -29,6 +34,12 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onOpenAbout, onOpenS
   const [phone, setPhone] = useState<string>(tenant?.phone || '');
   const [isSavedNotice, setIsSavedNotice] = useState<boolean>(false);
   const [isSaving, setIsSaving] = useState<boolean>(false);
+
+  // Cashier management state
+  const [cashierNameInput, setCashierNameInput] = useState<string>('');
+  const [cashierEmailInput, setCashierEmailInput] = useState<string>('');
+  const [isAddingCashier, setIsAddingCashier] = useState<boolean>(false);
+  const [cashierNotice, setCashierNotice] = useState<{ text: string; isError: boolean } | null>(null);
 
   // Sync state if tenant updates from Firebase or local storage
   React.useEffect(() => {
@@ -67,6 +78,35 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onOpenAbout, onOpenS
     if (!isNaN(val) && val > 0) {
       setManualOverride(manualRateActive, val);
       alert('Tasa de cambio configurada exitosamente.');
+    }
+  };
+
+  const handleAddCashier = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!cashierNameInput.trim() || !cashierEmailInput.trim()) {
+      setCashierNotice({ text: 'Ingresa el nombre y el correo Google del cajero/a.', isError: true });
+      return;
+    }
+    setIsAddingCashier(true);
+    setCashierNotice(null);
+    try {
+      const res = await addCashier(cashierNameInput.trim(), cashierEmailInput.trim());
+      setCashierNotice({ text: res.message, isError: !res.success });
+      if (res.success) {
+        setCashierNameInput('');
+        setCashierEmailInput('');
+        setTimeout(() => setCashierNotice(null), 5000);
+      }
+    } catch (err: any) {
+      setCashierNotice({ text: err?.message || 'Error al agregar cajero.', isError: true });
+    } finally {
+      setIsAddingCashier(false);
+    }
+  };
+
+  const handleRemoveCashier = async (email: string, name: string) => {
+    if (window.confirm(`¿Estás seguro de revocar el acceso a "${name}" (${email})? Ya no podrá ingresar al comercio.`)) {
+      await removeCashier(email);
     }
   };
 
@@ -189,6 +229,132 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onOpenAbout, onOpenS
             </div>
           </form>
         </div>
+
+        {/* Equipo de Trabajo / Cajeros Autorizados (Solo visible para el Dueño) */}
+        {isOwner && (
+          <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-bold text-slate-900 flex items-center space-x-2">
+                <Users className="w-4 h-4 text-blue-600" />
+                <span>Equipo de Trabajo / Cajeros Autorizados</span>
+              </h3>
+              <span className="text-[11px] font-bold text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">
+                {cashiers.length} {cashiers.length === 1 ? 'cajero' : 'cajeros'}
+              </span>
+            </div>
+
+            <p className="text-xs text-slate-500 leading-relaxed">
+              Agrega a tus cajeros o ayudantes ingresando su correo de Google. Tendrán acceso exclusivo al <strong>Punto de Venta (Caja)</strong> y al <strong>Cierre del Día</strong> para cuadrar su turno. No podrán modificar precios, ver inventario ni anular ventas.
+            </p>
+
+            {/* Formulario para agregar cajero */}
+            <form onSubmit={handleAddCashier} className="p-3.5 bg-slate-50 rounded-2xl border border-slate-200/80 space-y-3">
+              <span className="text-[11px] font-bold text-slate-700 uppercase tracking-wider block">
+                + Agregar Nuevo Cajero/a
+              </span>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs">
+                <div className="space-y-1">
+                  <label className="font-semibold text-slate-600">Nombre del Cajero/a:</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="Ej: María Pérez"
+                    value={cashierNameInput}
+                    onChange={(e) => setCashierNameInput(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl border border-slate-300 font-semibold focus:outline-blue-500 bg-white"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="font-semibold text-slate-600">Correo de Google (Gmail):</label>
+                  <input
+                    type="email"
+                    required
+                    placeholder="ejemplo@gmail.com"
+                    value={cashierEmailInput}
+                    onChange={(e) => setCashierEmailInput(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl border border-slate-300 font-semibold focus:outline-blue-500 bg-white"
+                  />
+                </div>
+              </div>
+
+              {cashierNotice && (
+                <div
+                  className={`p-2.5 rounded-xl text-xs flex items-center space-x-1.5 font-bold ${
+                    cashierNotice.isError
+                      ? 'bg-rose-50 border border-rose-200 text-rose-700'
+                      : 'bg-emerald-50 border border-emerald-200 text-emerald-800'
+                  }`}
+                >
+                  {cashierNotice.isError ? (
+                    <AlertCircle className="w-4 h-4 shrink-0 text-rose-500" />
+                  ) : (
+                    <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-600" />
+                  )}
+                  <span>{cashierNotice.text}</span>
+                </div>
+              )}
+
+              <div className="flex justify-end pt-1">
+                <button
+                  type="submit"
+                  disabled={isAddingCashier}
+                  className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-bold text-xs flex items-center space-x-1.5 transition shadow-sm cursor-pointer active:scale-95"
+                >
+                  <UserPlus className="w-3.5 h-3.5" />
+                  <span>{isAddingCashier ? 'Agregando...' : 'Autorizar Cajero'}</span>
+                </button>
+              </div>
+            </form>
+
+            {/* Lista de cajeros registrados */}
+            <div className="space-y-2 pt-1">
+              <span className="text-[11px] font-bold text-slate-600 uppercase tracking-wider block">
+                Cajeros Registrados en este Negocio:
+              </span>
+
+              {cashiers.length === 0 ? (
+                <div className="p-4 rounded-xl border border-dashed border-slate-200 text-center text-slate-400 text-xs">
+                  Aún no has registrado cajeros. Puedes ingresar el correo Google de tu personal arriba para darles acceso directo desde sus teléfonos o computadoras.
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {cashiers.map((c) => (
+                    <div
+                      key={c.id || c.email}
+                      className="p-3 rounded-xl border border-slate-200 bg-white flex items-center justify-between hover:bg-slate-50/60 transition shadow-2xs"
+                    >
+                      <div className="flex items-center space-x-3">
+                        <div className="w-9 h-9 rounded-xl bg-blue-50 text-blue-700 flex items-center justify-center font-bold text-sm shrink-0 border border-blue-100">
+                          {c.name.charAt(0).toUpperCase()}
+                        </div>
+                        <div>
+                          <div className="flex items-center space-x-2">
+                            <span className="font-bold text-xs text-slate-900">{c.name}</span>
+                            <span className="text-[10px] font-bold bg-emerald-100 text-emerald-800 px-1.5 py-0.2 rounded-full">
+                              Cajero Activo
+                            </span>
+                          </div>
+                          <span className="text-[11px] text-slate-500 font-medium block">{c.email}</span>
+                        </div>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveCashier(c.email, c.name)}
+                        className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition"
+                        title={`Revocar acceso a ${c.name}`}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Exchange Rate Override */}
         <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm space-y-4">

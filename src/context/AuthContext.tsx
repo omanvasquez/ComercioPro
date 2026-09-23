@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { Tenant, TenantStatus } from '../types';
+import { Tenant, TenantStatus, CashierUser, UserRole } from '../types';
 import { dbInit, getLocalData, saveLocalData } from '../services/localDatabase';
 import { auth, db, googleProvider } from '../services/firebase';
 import { 
@@ -13,7 +13,10 @@ import {
   setDoc, 
   updateDoc, 
   collection, 
-  onSnapshot 
+  onSnapshot,
+  query,
+  where,
+  getDocs
 } from 'firebase/firestore';
 
 interface AuthContextType {
@@ -21,6 +24,10 @@ interface AuthContextType {
   tenant: Tenant | null;
   authLoading: boolean;
   isSuperAdmin: boolean;
+  isOwner: boolean;
+  isCashier: boolean;
+  userRole: UserRole;
+  cashiers: CashierUser[];
   isSubscriptionActive: boolean;
   isPendingApproval: boolean;
   needsRegistration: boolean;
@@ -31,6 +38,8 @@ interface AuthContextType {
   registerTenant: (data: { name: string; ownerName: string; phone: string }) => Promise<void>;
   updateTenantProfile: (data: { name: string; ownerName: string; phone: string }) => Promise<void>;
   updateTenantStatus: (tenantId: string, newStatus: TenantStatus, trialDays?: number) => Promise<void>;
+  addCashier: (name: string, email: string) => Promise<{ success: boolean; message: string }>;
+  removeCashier: (cashierEmail: string) => Promise<void>;
   allTenantsForSuperadmin: Tenant[];
 }
 
@@ -173,25 +182,62 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             });
           }
         } else {
-          // Caso 2: Es un comerciante regular
+          // Caso 2: Es un comerciante regular o cajero
           // Escuchar su propio documento en Firestore en tiempo real (id = uid)
           if (db) {
-            unsubMyTenant = onSnapshot(doc(db, 'tenants', firebaseUser.uid), (docSnap) => {
+            unsubMyTenant = onSnapshot(doc(db, 'tenants', firebaseUser.uid), async (docSnap) => {
               if (docSnap.exists()) {
                 const tenantData = docSnap.data() as Tenant;
                 setCurrentTenant(tenantData);
               } else {
-                // Si no está por uid, buscar en tenantsList local
-                const existing = tenantsList.find((t) => t.ownerEmail.toLowerCase() === email);
-                setCurrentTenant(existing || null);
+                // Si no está por uid, buscar en tenantsList local (como dueño o como cajero)
+                const existing = tenantsList.find(
+                  (t) =>
+                    t.ownerEmail.toLowerCase() === email ||
+                    t.cashierEmails?.includes(email) ||
+                    t.cashiers?.some((c) => c.email.toLowerCase() === email && c.active)
+                );
+                if (existing) {
+                  setCurrentTenant(existing);
+                } else {
+                  // Consultar en Firestore si este email es cajero de algún comercio
+                  try {
+                    const q = query(
+                      collection(db, 'tenants'),
+                      where('cashierEmails', 'array-contains', email)
+                    );
+                    const qSnap = await getDocs(q);
+                    if (!qSnap.empty) {
+                      const cashierTenant = qSnap.docs[0].data() as Tenant;
+                      setCurrentTenant(cashierTenant);
+                      const updatedRegistry = [cashierTenant, ...tenantsList.filter((t) => t.id !== cashierTenant.id)];
+                      saveTenants(updatedRegistry);
+                    } else {
+                      setCurrentTenant(null);
+                    }
+                  } catch (err) {
+                    console.warn('Error buscando membresía de cajero en Firestore:', err);
+                    setCurrentTenant(null);
+                  }
+                }
               }
             }, (error) => {
               console.warn('Error al leer tenant personal en Firestore:', error);
-              const existing = tenantsList.find((t) => t.ownerEmail.toLowerCase() === email);
+              const existing = tenantsList.find(
+                (t) =>
+                  t.ownerEmail.toLowerCase() === email ||
+                  t.cashierEmails?.includes(email) ||
+                  t.cashiers?.some((c) => c.email.toLowerCase() === email && c.active)
+              );
               setCurrentTenant(existing || null);
             });
           } else {
-            const existing = tenantsList.find((t) => t.ownerEmail.toLowerCase() === email);
+            const existing = tenantsList.find(
+              (t) =>
+                t.ownerEmail.toLowerCase() === email ||
+                t.cashierEmails?.includes(email) ||
+                t.cashiers?.some((c) => c.email.toLowerCase() === email && c.active)
+            );
             setCurrentTenant(existing || null);
           }
         }
@@ -210,6 +256,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const isSuperAdmin = Boolean(user && user.email.toLowerCase() === SUPERADMIN_EMAIL.toLowerCase());
+
+  const isOwner = Boolean(
+    isSuperAdmin ||
+    (currentTenant && user && currentTenant.ownerEmail.toLowerCase() === user.email.toLowerCase())
+  );
+
+  const isCashier = Boolean(
+    !isOwner &&
+    currentTenant &&
+    user &&
+    (currentTenant.cashierEmails?.includes(user.email.toLowerCase()) ||
+     currentTenant.cashiers?.some((c) => c.email.toLowerCase() === user.email.toLowerCase() && c.active))
+  );
+
+  const userRole: UserRole = isCashier ? 'cajero' : 'owner';
+  const cashiers: CashierUser[] = currentTenant?.cashiers || [];
 
   // ¿Necesita registrar su bodega?
   const needsRegistration = Boolean(user && !isSuperAdmin && !currentTenant);
@@ -374,6 +436,104 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  // Agregar nuevo cajero autorizado
+  const addCashier = async (name: string, email: string): Promise<{ success: boolean; message: string }> => {
+    if (!currentTenant) return { success: false, message: 'No hay comercio activo' };
+    if (!isOwner) return { success: false, message: 'Solo el dueño del comercio puede agregar cajeros' };
+
+    const cleanEmail = email.trim().toLowerCase();
+    const cleanName = name.trim();
+
+    if (!cleanEmail || !cleanName) {
+      return { success: false, message: 'El nombre y el correo de Google son obligatorios' };
+    }
+
+    if (cleanEmail === currentTenant.ownerEmail.toLowerCase()) {
+      return { success: false, message: 'El correo del dueño ya tiene acceso total como administrador' };
+    }
+
+    const currentCashiers = currentTenant.cashiers || [];
+    if (currentCashiers.some((c) => c.email.toLowerCase() === cleanEmail)) {
+      return { success: false, message: 'Este correo ya está registrado en el equipo de cajeros' };
+    }
+
+    const newCashier: CashierUser = {
+      id: 'cashier_' + Date.now().toString(36),
+      email: cleanEmail,
+      name: cleanName,
+      role: 'cajero',
+      createdAt: Date.now(),
+      active: true,
+    };
+
+    const updatedCashiers = [...currentCashiers, newCashier];
+    const updatedEmails = Array.from(new Set([...(currentTenant.cashierEmails || []), cleanEmail]));
+
+    const updatedTenant: Tenant = {
+      ...currentTenant,
+      cashiers: updatedCashiers,
+      cashierEmails: updatedEmails,
+    };
+
+    setCurrentTenant(updatedTenant);
+    dbInit.saveTenant(updatedTenant);
+
+    const nextList = tenantsList.map((t) => (t.id === updatedTenant.id ? updatedTenant : t));
+    if (!nextList.some((t) => t.id === updatedTenant.id)) {
+      nextList.push(updatedTenant);
+    }
+    saveTenants(nextList);
+
+    if (db && updatedTenant.id) {
+      try {
+        await updateDoc(doc(db, 'tenants', updatedTenant.id), {
+          cashiers: updatedCashiers,
+          cashierEmails: updatedEmails,
+        });
+      } catch (err) {
+        console.error('Error guardando cajero en Firestore:', err);
+      }
+    }
+
+    return {
+      success: true,
+      message: `Cajero/a ${cleanName} (${cleanEmail}) agregado/a con éxito. Podrá ingresar con su cuenta Google.`,
+    };
+  };
+
+  // Eliminar o revocar acceso a un cajero
+  const removeCashier = async (cashierEmail: string) => {
+    if (!currentTenant || !isOwner) return;
+
+    const cleanEmail = cashierEmail.trim().toLowerCase();
+    const currentCashiers = currentTenant.cashiers || [];
+    const updatedCashiers = currentCashiers.filter((c) => c.email.toLowerCase() !== cleanEmail);
+    const updatedEmails = (currentTenant.cashierEmails || []).filter((e) => e.toLowerCase() !== cleanEmail);
+
+    const updatedTenant: Tenant = {
+      ...currentTenant,
+      cashiers: updatedCashiers,
+      cashierEmails: updatedEmails,
+    };
+
+    setCurrentTenant(updatedTenant);
+    dbInit.saveTenant(updatedTenant);
+
+    const nextList = tenantsList.map((t) => (t.id === updatedTenant.id ? updatedTenant : t));
+    saveTenants(nextList);
+
+    if (db && updatedTenant.id) {
+      try {
+        await updateDoc(doc(db, 'tenants', updatedTenant.id), {
+          cashiers: updatedCashiers,
+          cashierEmails: updatedEmails,
+        });
+      } catch (err) {
+        console.error('Error eliminando cajero en Firestore:', err);
+      }
+    }
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -381,6 +541,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         tenant: currentTenant,
         authLoading,
         isSuperAdmin,
+        isOwner,
+        isCashier,
+        userRole,
+        cashiers,
         isSubscriptionActive,
         isPendingApproval,
         needsRegistration,
@@ -391,6 +555,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         registerTenant,
         updateTenantProfile,
         updateTenantStatus,
+        addCashier,
+        removeCashier,
         allTenantsForSuperadmin: tenantsList,
       }}
     >

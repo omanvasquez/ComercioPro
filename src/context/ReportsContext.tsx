@@ -12,6 +12,7 @@ import { collection, doc, setDoc, deleteDoc, onSnapshot } from 'firebase/firesto
 interface ReportsContextType {
   sales: SaleTicket[];
   clearAllCalculations: () => void;
+  deleteSale: (ticketId: string) => { success: boolean; message: string; ticket?: SaleTicket };
   recordSale: (params: {
     items: {
       productId: string;
@@ -99,7 +100,7 @@ export const ReportsProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [sales, setSales] = useState<SaleTicket[]>(() => dbInit.getSales());
   const { effectiveRate, rates, isOverride } = useCurrency();
   const { products, adjustStock, clearAllWastes } = useInventory();
-  const { recordCharge, transactions, resetAllDebtsAndTransactions } = useCustomers();
+  const { recordCharge, transactions, revertSaleCharge, resetAllDebtsAndTransactions } = useCustomers();
   const { expenses, todayTotalExpensesUSD, todayTotalExpensesVES, todayExpensesByMethod, clearAllExpenses } = useExpenses();
   const { tenant } = useAuth();
 
@@ -253,6 +254,37 @@ export const ReportsProvider: React.FC<{ children: React.ReactNode }> = ({ child
         deleteDoc(doc(db, 'tenants', tenant.id, 'sales', s.id)).catch(() => {});
       });
     }
+  };
+
+  const deleteSale = (ticketId: string): { success: boolean; message: string; ticket?: SaleTicket } => {
+    const ticketToDelete = sales.find((s) => s.id === ticketId);
+    if (!ticketToDelete) {
+      return { success: false, message: 'Ticket de venta no encontrado.' };
+    }
+
+    // 1. Devolver al inventario cada producto vendido
+    ticketToDelete.items.forEach((item) => {
+      adjustStock(item.productId, item.quantity);
+    });
+
+    // 2. Si hubo fiado o vuelto a favor acreditado, revertirlo en la cuenta del cliente
+    revertSaleCharge(ticketToDelete.id, ticketToDelete.customerId, ticketToDelete.changeCreditedUSD);
+
+    // 3. Eliminar de la lista de ventas
+    const updated = sales.filter((s) => s.id !== ticketId);
+    setSales(updated);
+    dbInit.saveSales(updated);
+
+    // 4. Eliminar de Firestore
+    if (db && tenant?.id) {
+      deleteDoc(doc(db, 'tenants', tenant.id, 'sales', ticketToDelete.id)).catch(() => {});
+    }
+
+    return {
+      success: true,
+      message: `Ticket #${ticketToDelete.ticketNumber} anulado con éxito. Se reincorporaron los productos al inventario.`,
+      ticket: ticketToDelete,
+    };
   };
 
   // Resumen Diario (Hoy)
@@ -578,6 +610,7 @@ export const ReportsProvider: React.FC<{ children: React.ReactNode }> = ({ child
       value={{
         sales,
         recordSale,
+        deleteSale,
         clearAllCalculations,
         dailySummary,
         weeklySalesData,

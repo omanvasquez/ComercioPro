@@ -28,7 +28,7 @@ export const Header: React.FC<HeaderProps> = ({
   isInstalled = false,
 }) => {
   const { effectiveRate, isOverride, isLoading, refreshRates, setManualOverride, rates } = useCurrency();
-  const { tenant, isSuperAdmin, logout, user } = useAuth();
+  const { tenant, isSuperAdmin, isCashier, logout, user } = useAuth();
   const [isOnline, setIsOnline] = useState<boolean>(navigator.onLine);
   const [showRateModal, setShowRateModal] = useState<boolean>(false);
   const [overrideInput, setOverrideInput] = useState<string>(rates.manualOverride.rate.toString());
@@ -72,6 +72,11 @@ export const Header: React.FC<HeaderProps> = ({
               <span className="hidden sm:inline-block text-[10px] uppercase font-bold tracking-widest bg-amber-500/20 text-amber-400 px-2 py-0.5 rounded-full border border-amber-500/30">
                 v1.0
               </span>
+              {isCashier && (
+                <span className="text-[10px] font-bold bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded-full border border-blue-500/30">
+                  Caja
+                </span>
+              )}
             </div>
             <p className="text-xs text-slate-400 truncate max-w-[140px] sm:max-w-xs">
               {tenant?.name || 'Mi Comercio'}
@@ -85,15 +90,17 @@ export const Header: React.FC<HeaderProps> = ({
           {/* Rate Button */}
           <button
             onClick={() => {
+              if (isCashier) return;
               setOverrideInput(effectiveRate.toString());
               setShowRateModal(true);
             }}
+            disabled={isCashier}
             className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-xl border text-xs font-semibold transition shadow-sm ${
               isOverride
                 ? 'bg-amber-500/10 border-amber-500/40 text-amber-300 hover:bg-amber-500/20'
                 : 'bg-slate-800 border-slate-700 text-slate-200 hover:bg-slate-750'
-            }`}
-            title="Tasa de cambio activa. Clic para ajustar."
+            } ${isCashier ? 'cursor-default opacity-90' : 'cursor-pointer'}`}
+            title={isCashier ? `Tasa de cambio activa: Bs ${effectiveRate.toFixed(2)}` : "Tasa de cambio activa. Clic para ajustar."}
           >
             <span className="text-[11px] text-slate-400 font-normal">Tasa:</span>
             <span className="font-bold text-white">Bs {effectiveRate.toFixed(2)}</span>
