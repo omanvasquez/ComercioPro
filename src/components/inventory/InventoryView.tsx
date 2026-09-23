@@ -29,6 +29,7 @@ export const InventoryView: React.FC = () => {
     deleteProduct, 
     unpackBulk, 
     recordWaste,
+    getProductBasePriceUSD,
     getProductPriceUSD,
     getProductPriceVES 
   } = useInventory();
@@ -157,6 +158,8 @@ export const InventoryView: React.FC = () => {
                 {filteredProducts.map((product) => {
                   const priceUSD = getProductPriceUSD(product);
                   const priceVES = getProductPriceVES(product);
+                  const basePriceUSD = getProductBasePriceUSD(product);
+                  const hasDiscount = Boolean(product.discountPercent && product.discountPercent > 0);
                   const isLow = product.stock <= 3;
                   const marginUSD = Math.round((priceUSD - product.costUSD) * 100) / 100;
                   const marginPercent = product.costUSD > 0 ? Math.round((marginUSD / product.costUSD) * 100) : 0;
@@ -190,7 +193,19 @@ export const InventoryView: React.FC = () => {
                       {/* Precio */}
                       <td className="py-3 px-4 font-bold text-slate-900">
                         <div>
-                          <span>${priceUSD.toFixed(2)}</span>
+                          {hasDiscount ? (
+                            <div className="flex items-center space-x-1.5 flex-wrap">
+                              <span className="text-amber-700 font-black">${priceUSD.toFixed(2)}</span>
+                              <span className="text-[10px] line-through text-slate-400 font-normal">
+                                ${basePriceUSD.toFixed(2)}
+                              </span>
+                              <span className="text-[9px] font-black bg-amber-100 text-amber-800 border border-amber-300 px-1 py-0.2 rounded">
+                                -{product.discountPercent}%
+                              </span>
+                            </div>
+                          ) : (
+                            <span>${priceUSD.toFixed(2)}</span>
+                          )}
                           <span className="text-[10px] text-slate-500 font-normal block">
                             Bs {priceVES.toFixed(2)}
                           </span>

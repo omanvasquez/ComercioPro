@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, PackagePlus, DollarSign, Banknote, Sparkles, Plus, Check } from 'lucide-react';
+import { X, PackagePlus, DollarSign, Banknote, Sparkles, Plus, Check, Percent } from 'lucide-react';
 import { Product, PricingMode, ProductUnit } from '../../types';
 import { useCurrency } from '../../context/CurrencyContext';
 import { useInventory } from '../../context/InventoryContext';
@@ -29,6 +29,9 @@ export const ProductModal: React.FC<ProductModalProps> = ({
   const [pricingMode, setPricingMode] = useState<PricingMode>(productToEdit?.pricingMode || 'USD');
   const [priceUSD, setPriceUSD] = useState<string>(productToEdit?.priceUSD ? productToEdit.priceUSD.toString() : '');
   const [priceVES, setPriceVES] = useState<string>(productToEdit?.priceVES ? productToEdit.priceVES.toString() : '');
+  const [discountPercent, setDiscountPercent] = useState<string>(
+    productToEdit?.discountPercent ? productToEdit.discountPercent.toString() : ''
+  );
   const [costUSD, setCostUSD] = useState<string>(productToEdit?.costUSD ? productToEdit.costUSD.toString() : '');
   const [stock, setStock] = useState<string>(productToEdit?.stock ? productToEdit.stock.toString() : '');
   const [unit, setUnit] = useState<ProductUnit>(productToEdit?.unit || 'unidad');
@@ -56,6 +59,8 @@ export const ProductModal: React.FC<ProductModalProps> = ({
       finalUSD = toUSD(finalVES);
     }
 
+    const parsedDiscount = parseFloat(discountPercent) || 0;
+
     onSave({
       name: name.trim(),
       category: category.trim() || 'Víveres',
@@ -69,6 +74,7 @@ export const ProductModal: React.FC<ProductModalProps> = ({
       packUnits: isBulkPack ? parseInt(packUnits) || 1 : undefined,
       packCostUSD: isBulkPack ? parseFloat(packCostUSD) || 0 : undefined,
       barcode: barcode.trim() || undefined,
+      discountPercent: parsedDiscount > 0 ? parsedDiscount : 0,
     });
 
     onClose();
@@ -268,6 +274,41 @@ export const ProductModal: React.FC<ProductModalProps> = ({
                 </span>
               </div>
             )}
+
+            {/* Descuento Promocional Opcional */}
+            <div className="pt-2 border-t border-emerald-200/60 space-y-1.5">
+              <div className="flex items-center justify-between">
+                <label className="font-bold text-slate-700 text-xs flex items-center space-x-1">
+                  <Percent className="w-3.5 h-3.5 text-amber-600" />
+                  <span>Descuento Promocional (% Opcional)</span>
+                </label>
+                {parseFloat(discountPercent) > 0 && (
+                  <span className="text-[10px] font-black text-amber-800 bg-amber-100 px-2 py-0.5 rounded-full border border-amber-300">
+                    -{discountPercent}% OFF
+                  </span>
+                )}
+              </div>
+              <input
+                type="number"
+                min="0"
+                max="99"
+                step="1"
+                placeholder="Ej. 10 (dejar vacío si no aplica)"
+                value={discountPercent}
+                onChange={(e) => setDiscountPercent(e.target.value)}
+                className="w-full px-3 py-1.5 rounded-xl border border-slate-300 text-xs font-bold bg-white focus:outline-none focus:ring-2 focus:ring-amber-500"
+              />
+              {parseFloat(discountPercent) > 0 && (
+                <div className="p-2 rounded-lg bg-amber-50 border border-amber-200 text-[11px] text-amber-900 font-semibold flex items-center justify-between">
+                  <span>Precio final con rebaja:</span>
+                  <span className="font-black text-xs text-amber-800">
+                    {pricingMode === 'USD' 
+                      ? `$${(Math.round((parseFloat(priceUSD) || 0) * (1 - (parseFloat(discountPercent) || 0) / 100) * 100) / 100).toFixed(2)}`
+                      : `Bs ${(Math.round((parseFloat(priceVES) || 0) * (1 - (parseFloat(discountPercent) || 0) / 100) * 100) / 100).toFixed(2)}`}
+                  </span>
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Cost & Initial Stock */}

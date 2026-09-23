@@ -23,7 +23,7 @@ import { PriceOverrideModal } from './PriceOverrideModal';
 import { ExpenseModal } from '../expenses/ExpenseModal';
 
 export const POSView: React.FC = () => {
-  const { products, categories: customCategories, getProductPriceUSD, getProductPriceVES } = useInventory();
+  const { products, categories: customCategories, getProductPriceUSD, getProductPriceVES, getProductBasePriceUSD } = useInventory();
   const { 
     cart, 
     addToCart, 
@@ -122,6 +122,8 @@ export const POSView: React.FC = () => {
             {filteredProducts.map((product) => {
               const priceUSD = getProductPriceUSD(product);
               const priceVES = getProductPriceVES(product);
+              const basePriceUSD = getProductBasePriceUSD(product);
+              const hasDiscount = Boolean(product.discountPercent && product.discountPercent > 0);
               const isLowStock = product.stock <= 3;
               const isDecimalUnit = product.unit === 'kg' || product.unit === 'litro';
               const cartItem = cart.find((item) => item.product.id === product.id);
@@ -142,6 +144,11 @@ export const POSView: React.FC = () => {
                         {product.category}
                       </span>
                       <div className="flex items-center space-x-1">
+                        {hasDiscount && (
+                          <span className="text-[9px] font-black bg-amber-500 text-slate-950 px-1.5 py-0.2 rounded-md shadow-xs">
+                            -{product.discountPercent}%
+                          </span>
+                        )}
                         {cartItem && (
                           <span className="text-[10px] font-black bg-brand-emerald-600 text-white px-1.5 py-0.2 rounded-md shadow-xs">
                             {cartItem.quantity} {product.unit}
@@ -166,9 +173,16 @@ export const POSView: React.FC = () => {
 
                   <div className="mt-3 pt-2 border-t border-slate-100 flex items-baseline justify-between">
                     <div>
-                      <span className="text-base font-black text-slate-900">
-                        ${priceUSD.toFixed(2)}
-                      </span>
+                      <div className="flex items-baseline space-x-1.5">
+                        <span className={`text-base font-black ${hasDiscount ? 'text-amber-600' : 'text-slate-900'}`}>
+                          ${priceUSD.toFixed(2)}
+                        </span>
+                        {hasDiscount && (
+                          <span className="text-[11px] line-through text-slate-400 font-semibold">
+                            ${basePriceUSD.toFixed(2)}
+                          </span>
+                        )}
+                      </div>
                       <span className="text-[11px] text-slate-500 font-semibold block">
                         Bs {priceVES.toLocaleString('es-VE', { minimumFractionDigits: 2 })}
                       </span>
@@ -238,6 +252,11 @@ export const POSView: React.FC = () => {
                         <span className="text-[11px] text-slate-500 font-semibold">
                           ${item.finalPriceUSD.toFixed(2)} c/u
                         </span>
+                        {item.product.discountPercent && item.product.discountPercent > 0 && (
+                          <span className="text-[9px] font-bold bg-amber-100 text-amber-800 px-1.5 py-0.2 rounded">
+                            -{item.product.discountPercent}%
+                          </span>
+                        )}
                         {item.isOverridden && (
                           <span className="text-[9px] font-bold bg-amber-100 text-amber-800 px-1.5 py-0.2 rounded">
                             Ajustado
@@ -493,6 +512,11 @@ export const POSView: React.FC = () => {
                             <span className="text-[11px] text-slate-400">
                               (Bs {item.finalPriceVES.toFixed(2)})
                             </span>
+                            {item.product.discountPercent && item.product.discountPercent > 0 && (
+                              <span className="text-[9px] font-bold bg-amber-100 text-amber-800 px-1.5 py-0.2 rounded">
+                                -{item.product.discountPercent}%
+                              </span>
+                            )}
                             {item.isOverridden && (
                               <span className="text-[9px] font-bold bg-amber-100 text-amber-800 px-1.5 py-0.2 rounded">
                                 Ajustado

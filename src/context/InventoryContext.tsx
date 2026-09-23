@@ -19,6 +19,8 @@ interface InventoryContextType {
   unpackBulk: (productId: string, packsToUnpack: number) => { success: boolean; message: string };
   recordWaste: (productId: string, quantity: number, reason: WasteReason, notes?: string) => void;
   clearAllWastes: () => void;
+  getProductBasePriceUSD: (product: Product) => number;
+  getProductBasePriceVES: (product: Product) => number;
   getProductPriceUSD: (product: Product) => number;
   getProductPriceVES: (product: Product) => number;
   adjustStock: (productId: string, quantityDelta: number) => void;
@@ -96,18 +98,34 @@ export const InventoryProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     };
   }, [tenant?.id]);
 
-  const getProductPriceUSD = (product: Product): number => {
+  const getProductBasePriceUSD = (product: Product): number => {
     if (product.pricingMode === 'USD') {
       return product.priceUSD;
     }
     return toUSD(product.priceVES);
   };
 
-  const getProductPriceVES = (product: Product): number => {
+  const getProductBasePriceVES = (product: Product): number => {
     if (product.pricingMode === 'VES') {
       return product.priceVES;
     }
     return toVES(product.priceUSD);
+  };
+
+  const getProductPriceUSD = (product: Product): number => {
+    const base = getProductBasePriceUSD(product);
+    if (product.discountPercent && product.discountPercent > 0) {
+      return Math.round(base * (1 - product.discountPercent / 100) * 100) / 100;
+    }
+    return base;
+  };
+
+  const getProductPriceVES = (product: Product): number => {
+    const base = getProductBasePriceVES(product);
+    if (product.discountPercent && product.discountPercent > 0) {
+      return Math.round(base * (1 - product.discountPercent / 100) * 100) / 100;
+    }
+    return base;
   };
 
   const addProduct = (newProd: Omit<Product, 'id' | 'updatedAt'>) => {
@@ -279,6 +297,8 @@ export const InventoryProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         unpackBulk,
         recordWaste,
         clearAllWastes,
+        getProductBasePriceUSD,
+        getProductBasePriceVES,
         getProductPriceUSD,
         getProductPriceVES,
         adjustStock,

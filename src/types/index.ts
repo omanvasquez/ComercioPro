@@ -51,6 +51,7 @@ export interface Product {
   packUnits?: number;      // Cantidad de unidades por bulto
   packCostUSD?: number;    // Costo del bulto entero
   barcode?: string;
+  discountPercent?: number; // Descuento opcional en % (ej. 10 para 10%)
   updatedAt: number;
 }
 
