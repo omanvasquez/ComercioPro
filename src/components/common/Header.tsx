@@ -15,14 +15,13 @@ import { useCurrency } from '../../context/CurrencyContext';
 import { useAuth } from '../../context/AuthContext';
 
 interface HeaderProps {
-  onOpenAbout: () => void;
+  onOpenAbout?: () => void;
   onOpenSuperAdmin: () => void;
   onOpenInstall?: () => void;
   isInstalled?: boolean;
 }
 
 export const Header: React.FC<HeaderProps> = ({ 
-  onOpenAbout, 
   onOpenSuperAdmin,
   onOpenInstall,
   isInstalled = false,
@@ -174,15 +173,6 @@ export const Header: React.FC<HeaderProps> = ({
               <span className="hidden sm:inline">Admin</span>
             </button>
           )}
-
-          {/* About Modal Trigger */}
-          <button
-            onClick={onOpenAbout}
-            className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition"
-            title="Acerca de ComercioPro"
-          >
-            <Info className="w-4 h-4" />
-          </button>
 
           {/* Logout Button */}
           <button

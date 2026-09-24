@@ -1,5 +1,5 @@
 import React from 'react';
-import { ShoppingCart, Package, Users, BarChart3, Settings, ShieldCheck, Download } from 'lucide-react';
+import { ShoppingCart, Package, Users, BarChart3, Settings, ShieldCheck, Download, Info } from 'lucide-react';
 import { TabType } from './BottomNav';
 import { useCart } from '../../context/CartContext';
 import { useAuth } from '../../context/AuthContext';
@@ -8,6 +8,7 @@ interface SidebarProps {
   activeTab: TabType;
   setActiveTab: (tab: TabType) => void;
   onOpenSuperAdmin: () => void;
+  onOpenAbout?: () => void;
   onOpenInstall?: () => void;
   isInstalled?: boolean;
 }
@@ -16,6 +17,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   activeTab, 
   setActiveTab, 
   onOpenSuperAdmin,
+  onOpenAbout,
   onOpenInstall,
   isInstalled = false,
 }) => {
@@ -74,6 +76,23 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </button>
           );
         })}
+
+        {/* Acerca de ComercioPro debajo de Configuración Local */}
+        {onOpenAbout && (
+          <button
+            type="button"
+            onClick={onOpenAbout}
+            className="w-full flex items-center justify-between px-3.5 py-3 rounded-xl text-sm font-semibold transition text-slate-600 hover:bg-slate-100 hover:text-slate-900 cursor-pointer"
+          >
+            <div className="flex items-center space-x-3">
+              <Info className="w-5 h-5 text-slate-500" />
+              <span>Acerca de ComercioPro</span>
+            </div>
+            <span className="text-[10px] uppercase font-bold tracking-wider bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full border border-slate-200">
+              v1.0
+            </span>
+          </button>
+        )}
       </div>
 
       {/* Superadmin shortcut in desktop */}

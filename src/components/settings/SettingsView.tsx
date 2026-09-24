@@ -20,7 +20,8 @@ import {
   QrCode,
   Copy,
   Check,
-  Share2
+  Share2,
+  ChevronRight
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useCurrency } from '../../context/CurrencyContext';
@@ -595,14 +596,30 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onOpenAbout, onOpenS
           </div>
         </div>
 
-        {/* About trigger */}
-        <div className="pt-2 text-center">
+        {/* Acerca de ComercioPro (Acceso destacado y táctil para Móvil y Desktop) */}
+        <div className="pt-2 pb-4">
           <button
+            type="button"
             onClick={onOpenAbout}
-            className="text-xs text-slate-400 hover:text-slate-700 font-semibold flex items-center justify-center space-x-1 mx-auto"
+            className="w-full p-4 rounded-2xl bg-white border border-slate-200 hover:border-slate-300 shadow-sm flex items-center justify-between transition group active:scale-[0.99] cursor-pointer text-left"
           >
-            <Info className="w-3.5 h-3.5" />
-            <span>Acerca de ComercioPro v1.0 • Oman Vásquez</span>
+            <div className="flex items-center space-x-3.5">
+              <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 border border-blue-100 group-hover:bg-blue-600 group-hover:text-white transition">
+                <Info className="w-5 h-5" />
+              </div>
+              <div>
+                <div className="flex items-center space-x-2">
+                  <span className="font-bold text-sm text-slate-900">Acerca de ComercioPro</span>
+                  <span className="text-[10px] font-black bg-amber-100 text-amber-900 border border-amber-300 px-2 py-0.2 rounded-full">
+                    v1.0
+                  </span>
+                </div>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Información del sistema, desarrollador y términos
+                </p>
+              </div>
+            </div>
+            <ChevronRight className="w-5 h-5 text-slate-400 group-hover:text-slate-700 transition shrink-0" />
           </button>
         </div>
       </div>

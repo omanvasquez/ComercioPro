@@ -109,6 +109,7 @@ const AppContent: React.FC = () => {
         <Sidebar
           activeTab={activeTab}
           setActiveTab={setActiveTab}
+          onOpenAbout={() => setIsAboutOpen(true)}
           onOpenSuperAdmin={() => setIsSuperAdminOpen(true)}
           onOpenInstall={triggerInstall}
           isInstalled={isInstalled}
