@@ -14,7 +14,13 @@ import {
   UserPlus,
   Trash2,
   CheckCircle2,
-  AlertCircle
+  AlertCircle,
+  Mail,
+  Lock,
+  QrCode,
+  Copy,
+  Check,
+  Share2
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useCurrency } from '../../context/CurrencyContext';
@@ -26,7 +32,7 @@ interface SettingsViewProps {
 }
 
 export const SettingsView: React.FC<SettingsViewProps> = ({ onOpenAbout, onOpenSuperAdmin }) => {
-  const { tenant, isSuperAdmin, isOwner, cashiers, addCashier, removeCashier, trialDaysRemaining, updateTenantProfile } = useAuth();
+  const { user, tenant, isSuperAdmin, isOwner, cashiers, addCashier, removeCashier, trialDaysRemaining, updateTenantProfile } = useAuth();
   const { rates, setManualOverride, refreshRates, isLoading } = useCurrency();
 
   const [storeName, setStoreName] = useState<string>(tenant?.name || '');
@@ -49,6 +55,36 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onOpenAbout, onOpenS
       setPhone(tenant.phone);
     }
   }, [tenant?.name, tenant?.ownerName, tenant?.phone]);
+
+  // Share & Copy App URL
+  const [copiedUrl, setCopiedUrl] = useState<boolean>(false);
+
+  const handleCopyAppUrl = async () => {
+    try {
+      await navigator.clipboard.writeText('https://comerciopro-app.web.app');
+      setCopiedUrl(true);
+      setTimeout(() => setCopiedUrl(false), 2500);
+    } catch {
+      alert('Enlace: https://comerciopro-app.web.app');
+    }
+  };
+
+  const handleShareApp = async () => {
+    const shareData = {
+      title: 'ComercioPro',
+      text: 'Accede al sistema de ventas ComercioPro:',
+      url: 'https://comerciopro-app.web.app',
+    };
+    if (navigator.share) {
+      try {
+        await navigator.share(shareData);
+      } catch {
+        // Diálogo cancelado por el usuario
+      }
+    } else {
+      handleCopyAppUrl();
+    }
+  };
 
   // Rate override
   const [manualRateActive, setManualRateActive] = useState<boolean>(rates.manualOverride.active);
@@ -210,6 +246,30 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onOpenAbout, onOpenS
               </div>
             </div>
 
+            {/* Correo de Registro (Solo Lectura) */}
+            <div className="space-y-1">
+              <div className="flex items-center justify-between">
+                <label className="font-bold text-slate-700 flex items-center space-x-1.5">
+                  <Mail className="w-3.5 h-3.5 text-slate-400" />
+                  <span>Correo de Registro / Cuenta de Acceso:</span>
+                </label>
+                <span className="text-[10px] text-slate-400 font-semibold bg-slate-100 px-2 py-0.5 rounded-md flex items-center space-x-1">
+                  <Lock className="w-2.5 h-2.5 text-slate-400" />
+                  <span>No modificable</span>
+                </span>
+              </div>
+              <input
+                type="email"
+                disabled
+                readOnly
+                value={user?.email || tenant?.ownerEmail || 'No disponible'}
+                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-100/70 text-slate-600 font-semibold cursor-not-allowed select-all"
+              />
+              <span className="text-[11px] text-slate-400 block">
+                Cuenta oficial con la que inicias sesión y se autoriza la licencia comercial de tu negocio.
+              </span>
+            </div>
+
             <div className="pt-2 flex items-center justify-between">
               {isSavedNotice && (
                 <span className="text-xs text-brand-emerald-600 font-bold">
@@ -355,6 +415,82 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onOpenAbout, onOpenS
             </div>
           </div>
         )}
+
+        {/* Compartir Aplicación y Acceso para el Equipo (Código QR) */}
+        <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-bold text-slate-900 flex items-center space-x-2">
+              <QrCode className="w-4 h-4 text-emerald-600" />
+              <span>Compartir Aplicación / Acceso Rápido</span>
+            </h3>
+            <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">
+              PWA Web
+            </span>
+          </div>
+
+          <p className="text-xs text-slate-500 leading-relaxed">
+            Muestra o comparte este código QR para que tus cajeros, ayudantes o socios abran ComercioPro directamente en sus teléfonos o computadoras.
+          </p>
+
+          <div className="flex flex-col sm:flex-row items-center gap-4 bg-slate-50/80 p-4 rounded-2xl border border-slate-200">
+            {/* Contenedor del Código QR */}
+            <div className="bg-white p-3 rounded-2xl border border-slate-200 shadow-xs shrink-0 flex flex-col items-center">
+              <img
+                src="/qr-comerciopro.svg"
+                alt="Código QR ComercioPro"
+                className="w-36 h-36 sm:w-40 sm:h-40 object-contain"
+              />
+              <span className="text-[10px] text-slate-400 font-bold mt-1 text-center">
+                Escanear con la cámara
+              </span>
+            </div>
+
+            {/* Enlace y Botones de Acción */}
+            <div className="flex-1 w-full space-y-2.5">
+              <div className="space-y-1">
+                <span className="text-[11px] font-bold text-slate-600 uppercase tracking-wider block">
+                  Enlace directo de la aplicación:
+                </span>
+                <div className="p-2.5 bg-white rounded-xl border border-slate-200 font-mono text-xs text-slate-700 select-all truncate font-semibold">
+                  https://comerciopro-app.web.app
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2 pt-1">
+                <button
+                  type="button"
+                  onClick={handleCopyAppUrl}
+                  className="px-3 py-2 rounded-xl bg-white border border-slate-300 hover:bg-slate-50 active:bg-slate-100 text-slate-700 font-bold text-xs flex items-center justify-center space-x-1.5 transition shadow-2xs cursor-pointer"
+                >
+                  {copiedUrl ? (
+                    <>
+                      <Check className="w-3.5 h-3.5 text-emerald-600" />
+                      <span className="text-emerald-700">¡Copiado!</span>
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="w-3.5 h-3.5 text-slate-500" />
+                      <span>Copiar Enlace</span>
+                    </>
+                  )}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleShareApp}
+                  className="px-3 py-2 rounded-xl bg-brand-emerald-600 hover:bg-brand-emerald-700 text-white font-bold text-xs flex items-center justify-center space-x-1.5 transition shadow-xs cursor-pointer"
+                >
+                  <Share2 className="w-3.5 h-3.5" />
+                  <span>Compartir</span>
+                </button>
+              </div>
+
+              <p className="text-[11px] text-slate-400 leading-normal">
+                💡 Al escanearlo o abrir el enlace, pueden presionar "Instalar aplicación" o "Agregar a pantalla de inicio" para tenerla como app en su teléfono.
+              </p>
+            </div>
+          </div>
+        </div>
 
         {/* Exchange Rate Override */}
         <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm space-y-4">
