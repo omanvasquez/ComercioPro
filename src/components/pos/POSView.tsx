@@ -12,15 +12,18 @@ import {
   ShoppingCart,
   ChevronUp,
   X,
-  MinusCircle
+  MinusCircle,
+  Zap
 } from 'lucide-react';
 import { Product, CartItem } from '../../types';
 import { useInventory } from '../../context/InventoryContext';
 import { useCart } from '../../context/CartContext';
 import { useCurrency } from '../../context/CurrencyContext';
+import { useAuth } from '../../context/AuthContext';
 import { CheckoutModal } from './CheckoutModal';
 import { PriceOverrideModal } from './PriceOverrideModal';
 import { ExpenseModal } from '../expenses/ExpenseModal';
+import { QuickSaleModal } from './QuickSaleModal';
 
 export const POSView: React.FC = () => {
   const { products, categories: customCategories, getProductPriceUSD, getProductPriceVES, getProductBasePriceUSD } = useInventory();
@@ -37,6 +40,7 @@ export const POSView: React.FC = () => {
     totalItemsCount
   } = useCart();
   const { effectiveRate } = useCurrency();
+  const { tenant } = useAuth();
 
   // Search and categories
   const [search, setSearch] = useState<string>('');
@@ -46,6 +50,12 @@ export const POSView: React.FC = () => {
   const [isCheckoutOpen, setIsCheckoutOpen] = useState<boolean>(false);
   const [itemToOverride, setItemToOverride] = useState<CartItem | null>(null);
   const [isExpenseModalOpen, setIsExpenseModalOpen] = useState<boolean>(false);
+  const [isQuickSaleOpen, setIsQuickSaleOpen] = useState<boolean>(false);
+  const [quickSaleCheckout, setQuickSaleCheckout] = useState<{
+    cartItems: CartItem[];
+    totalUSD: number;
+    totalVES: number;
+  } | null>(null);
 
   // Mobile cart drawer open state
   const [isMobileCartOpen, setIsMobileCartOpen] = useState<boolean>(false);
@@ -88,6 +98,15 @@ export const POSView: React.FC = () => {
                 className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-brand-emerald-500 bg-slate-50/50"
               />
             </div>
+            <button
+              type="button"
+              onClick={() => setIsQuickSaleOpen(true)}
+              className="px-3.5 py-2.5 rounded-xl border border-brand-emerald-200 bg-brand-emerald-50 hover:bg-brand-emerald-100 active:bg-brand-emerald-200 text-brand-emerald-700 font-bold text-xs flex items-center space-x-1.5 transition shrink-0 active:scale-95 shadow-xs"
+              title="Cobro rápido directo sin inventario"
+            >
+              <Zap className="w-4 h-4 text-brand-emerald-600 fill-brand-emerald-600" />
+              <span>Cobro Rápido</span>
+            </button>
             <button
               type="button"
               onClick={() => setIsExpenseModalOpen(true)}
@@ -684,6 +703,58 @@ export const POSView: React.FC = () => {
         <ExpenseModal
           isOpen={isExpenseModalOpen}
           onClose={() => setIsExpenseModalOpen(false)}
+        />
+      )}
+
+      {/* Quick Sale Input Modal */}
+      {isQuickSaleOpen && (
+        <QuickSaleModal
+          isOpen={isQuickSaleOpen}
+          onClose={() => setIsQuickSaleOpen(false)}
+          onProceed={(data) => {
+            const quickProduct: Product = {
+              id: `quick_${Date.now()}`,
+              tenantId: tenant?.id || 'tenant_comercio_01',
+              name: data.concept || 'Cobro Rápido',
+              category: 'Venta Libre',
+              pricingMode: 'USD',
+              priceUSD: data.amountUSD,
+              priceVES: data.amountVES,
+              costUSD: 0,
+              stock: 0,
+              unit: 'unidad',
+              updatedAt: Date.now(),
+            };
+            const quickItem: CartItem = {
+              product: quickProduct,
+              quantity: 1,
+              originalPriceUSD: data.amountUSD,
+              originalPriceVES: data.amountVES,
+              finalPriceUSD: data.amountUSD,
+              finalPriceVES: data.amountVES,
+              isOverridden: false,
+            };
+            setIsQuickSaleOpen(false);
+            setQuickSaleCheckout({
+              cartItems: [quickItem],
+              totalUSD: data.amountUSD,
+              totalVES: data.amountVES,
+            });
+          }}
+        />
+      )}
+
+      {/* Quick Sale Direct Checkout Modal */}
+      {quickSaleCheckout && (
+        <CheckoutModal
+          isOpen={Boolean(quickSaleCheckout)}
+          onClose={() => setQuickSaleCheckout(null)}
+          cartItems={quickSaleCheckout.cartItems}
+          totalUSD={quickSaleCheckout.totalUSD}
+          totalVES={quickSaleCheckout.totalVES}
+          onSaleCompleted={() => {
+            setQuickSaleCheckout(null);
+          }}
         />
       )}
     </div>

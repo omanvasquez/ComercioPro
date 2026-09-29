@@ -170,7 +170,8 @@ export const ReportsProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
     const itemSnapshots: TicketItemSnapshot[] = items.map((cartItem) => {
       const liveProduct = products.find((p) => p.id === cartItem.productId);
-      const costUSD = liveProduct ? liveProduct.costUSD : cartItem.finalPriceUSD * 0.7; // Snapshot del costo en este segundo
+      const isQuickSale = cartItem.productId.startsWith('quick_');
+      const costUSD = liveProduct ? liveProduct.costUSD : (isQuickSale ? 0 : cartItem.finalPriceUSD * 0.7); // Snapshot del costo en este segundo
       const itemTotalUSD = cartItem.finalPriceUSD * cartItem.quantity;
       const itemTotalVES = cartItem.finalPriceVES * cartItem.quantity;
       const itemCostTotal = costUSD * cartItem.quantity;
@@ -179,8 +180,10 @@ export const ReportsProvider: React.FC<{ children: React.ReactNode }> = ({ child
       totalVES += itemTotalVES;
       totalCostUSD += itemCostTotal;
 
-      // Descontar inventario inmediatamente
-      adjustStock(cartItem.productId, -cartItem.quantity);
+      // Descontar inventario inmediatamente (solo si es un producto real del inventario)
+      if (liveProduct) {
+        adjustStock(cartItem.productId, -cartItem.quantity);
+      }
 
       return {
         productId: cartItem.productId,
@@ -262,9 +265,11 @@ export const ReportsProvider: React.FC<{ children: React.ReactNode }> = ({ child
       return { success: false, message: 'Ticket de venta no encontrado.' };
     }
 
-    // 1. Devolver al inventario cada producto vendido
+    // 1. Devolver al inventario cada producto vendido (si no es venta rápida)
     ticketToDelete.items.forEach((item) => {
-      adjustStock(item.productId, item.quantity);
+      if (!item.productId.startsWith('quick_')) {
+        adjustStock(item.productId, item.quantity);
+      }
     });
 
     // 2. Si hubo fiado o vuelto a favor acreditado, revertirlo en la cuenta del cliente
