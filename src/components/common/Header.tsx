@@ -9,7 +9,8 @@ import {
   WifiOff, 
   Check,
   LogOut,
-  Download
+  Download,
+  X
 } from 'lucide-react';
 import { useCurrency } from '../../context/CurrencyContext';
 import { useAuth } from '../../context/AuthContext';
@@ -89,17 +90,15 @@ export const Header: React.FC<HeaderProps> = ({
           {/* Rate Button */}
           <button
             onClick={() => {
-              if (isCashier) return;
               setOverrideInput(effectiveRate.toString());
               setShowRateModal(true);
             }}
-            disabled={isCashier}
-            className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-xl border text-xs font-semibold transition shadow-sm ${
+            className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-xl border text-xs font-semibold transition shadow-sm cursor-pointer ${
               isOverride
                 ? 'bg-amber-500/10 border-amber-500/40 text-amber-300 hover:bg-amber-500/20'
                 : 'bg-slate-800 border-slate-700 text-slate-200 hover:bg-slate-750'
-            } ${isCashier ? 'cursor-default opacity-90' : 'cursor-pointer'}`}
-            title={isCashier ? `Tasa de cambio activa: Bs ${effectiveRate.toFixed(2)}` : "Tasa de cambio activa. Clic para ajustar."}
+            }`}
+            title="Tasa de cambio activa. Clic para ajustar."
           >
             <span className="text-[11px] text-slate-400 font-normal">Tasa:</span>
             <span className="font-bold text-white">Bs {effectiveRate.toFixed(2)}</span>
@@ -187,14 +186,29 @@ export const Header: React.FC<HeaderProps> = ({
 
       {/* Modal / Popover para Ajustar Tasa */}
       {showRateModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl p-5 max-w-sm w-full text-slate-800 shadow-2xl border border-slate-100 space-y-4">
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm"
+          onClick={() => setShowRateModal(false)}
+        >
+          <div 
+            className="bg-white rounded-2xl p-5 max-w-sm w-full text-slate-800 shadow-2xl border border-slate-100 space-y-4"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-2">
                 <SlidersHorizontal className="w-5 h-5 text-slate-700" />
                 <h3 className="font-bold text-base text-slate-900">Ajuste de Tasa</h3>
               </div>
-              <span className="text-xs text-slate-500">BCV: Bs {rates.bcv.toFixed(2)}</span>
+              <div className="flex items-center space-x-2">
+                <span className="text-xs text-slate-500">BCV: Bs {rates.bcv.toFixed(2)}</span>
+                <button
+                  onClick={() => setShowRateModal(false)}
+                  className="p-1 text-slate-400 hover:text-slate-700 rounded-lg transition"
+                  title="Cerrar"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
             </div>
 
             <p className="text-xs text-slate-500">
