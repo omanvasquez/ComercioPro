@@ -10,7 +10,8 @@ import {
   AlertCircle, 
   UserPlus, 
   MessageCircle, 
-  Star 
+  Star,
+  Printer 
 } from 'lucide-react';
 import { PaymentMethod, PaymentSplit, SaleTicket, Customer } from '../../types';
 import { useCurrency } from '../../context/CurrencyContext';
@@ -18,6 +19,7 @@ import { useCustomers } from '../../context/CustomersContext';
 import { useReports } from '../../context/ReportsContext';
 import { useAuth } from '../../context/AuthContext';
 import { generateSaleTicketWhatsApp, openWhatsAppLink } from '../../services/whatsapp';
+import { printSaleTicket } from '../../services/ticketPrinter';
 
 interface CheckoutModalProps {
   isOpen: boolean;
@@ -211,6 +213,14 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
     const text = generateSaleTicketWhatsApp(completedTicket, tenant.name);
     const phone = selectedCustomer ? selectedCustomer.phone : '';
     openWhatsAppLink(phone, text);
+  };
+
+  const handlePrintTicket = () => {
+    if (!completedTicket) return;
+    printSaleTicket(completedTicket, {
+      storeName: tenant.name || 'ComercioPro',
+      storePhone: tenant.phone || '',
+    });
   };
 
   if (!isOpen) return null;
@@ -551,14 +561,26 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
               <p><strong>Tasa inmutable:</strong> Bs {completedTicket.exchangeRateSnapshot.appliedRate.toFixed(2)}</p>
             </div>
 
-            {/* WhatsApp Receipt Button */}
-            <button
-              onClick={handleSendWhatsApp}
-              className="w-full py-3.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm flex items-center justify-center space-x-2 shadow-lg transition"
-            >
-              <MessageCircle className="w-5 h-5" />
-              <span>Enviar Recibo por WhatsApp</span>
-            </button>
+            {/* Actions: Thermal Print & WhatsApp */}
+            <div className="space-y-2.5">
+              <button
+                type="button"
+                onClick={handlePrintTicket}
+                className="w-full py-3.5 px-4 rounded-xl bg-brand-slate-900 hover:bg-brand-slate-800 text-white font-bold text-sm flex items-center justify-center space-x-2 shadow-lg transition active:scale-[0.99]"
+              >
+                <Printer className="w-5 h-5 text-brand-emerald-400" />
+                <span>Imprimir Ticket en Impresora</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={handleSendWhatsApp}
+                className="w-full py-3 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm flex items-center justify-center space-x-2 shadow-md transition active:scale-[0.99]"
+              >
+                <MessageCircle className="w-5 h-5" />
+                <span>Enviar Recibo por WhatsApp</span>
+              </button>
+            </div>
           </div>
         )}
 

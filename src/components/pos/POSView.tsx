@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { 
   Search, 
   Plus, 
@@ -13,7 +13,8 @@ import {
   ChevronUp,
   X,
   MinusCircle,
-  Zap
+  Zap,
+  Barcode
 } from 'lucide-react';
 import { Product, CartItem } from '../../types';
 import { useInventory } from '../../context/InventoryContext';
@@ -45,6 +46,13 @@ export const POSView: React.FC = () => {
   // Search and categories
   const [search, setSearch] = useState<string>('');
   const [selectedCategory, setSelectedCategory] = useState<string>('Todos');
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
+  // Barcode scanner feedback state
+  const [scannerFeedback, setScannerFeedback] = useState<{
+    type: 'success' | 'error';
+    message: string;
+  } | null>(null);
 
   // Modals
   const [isCheckoutOpen, setIsCheckoutOpen] = useState<boolean>(false);
@@ -79,9 +87,164 @@ export const POSView: React.FC = () => {
     });
   }, [products, search, selectedCategory]);
 
+  // Audio beep for barcode scan feedback (physical POS standard)
+  const playScannerBeep = (isSuccess: boolean) => {
+    try {
+      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+      if (!AudioCtx) return;
+      const ctx = new AudioCtx();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+
+      if (isSuccess) {
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(1760, ctx.currentTime);
+        gain.gain.setValueAtTime(0.12, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.1);
+        osc.start(ctx.currentTime);
+        osc.stop(ctx.currentTime + 0.1);
+      } else {
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(320, ctx.currentTime);
+        gain.gain.setValueAtTime(0.15, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.22);
+        osc.start(ctx.currentTime);
+        osc.stop(ctx.currentTime + 0.22);
+      }
+    } catch {
+      // Audio policy safe
+    }
+  };
+
+  // Process barcode scan
+  const handleProcessBarcode = useCallback(
+    (rawCode: string) => {
+      const code = rawCode.trim();
+      if (!code) return;
+
+      // 1. Look for exact barcode match
+      const foundByBarcode = products.find(
+        (p) => p.barcode && p.barcode.trim().toLowerCase() === code.toLowerCase()
+      );
+
+      if (foundByBarcode) {
+        const isDecimal = foundByBarcode.unit === 'kg' || foundByBarcode.unit === 'litro';
+        addToCart(foundByBarcode, isDecimal ? 0.25 : 1);
+        playScannerBeep(true);
+        setScannerFeedback({
+          type: 'success',
+          message: `+ ${foundByBarcode.name} agregado`,
+        });
+        setSearch('');
+        return;
+      }
+
+      // 2. If no exact barcode, check if the current query uniquely matches 1 product
+      if (filteredProducts.length === 1) {
+        const singleProduct = filteredProducts[0];
+        const isDecimal = singleProduct.unit === 'kg' || singleProduct.unit === 'litro';
+        addToCart(singleProduct, isDecimal ? 0.25 : 1);
+        playScannerBeep(true);
+        setScannerFeedback({
+          type: 'success',
+          message: `+ ${singleProduct.name} agregado`,
+        });
+        setSearch('');
+        return;
+      }
+
+      // 3. Not found
+      playScannerBeep(false);
+      setScannerFeedback({
+        type: 'error',
+        message: `Código no registrado: "${code}"`,
+      });
+      setSearch('');
+    },
+    [products, filteredProducts, addToCart]
+  );
+
+  // Auto-dismiss scanner feedback toast
+  useEffect(() => {
+    if (!scannerFeedback) return;
+    const timer = setTimeout(() => {
+      setScannerFeedback(null);
+    }, 2500);
+    return () => clearTimeout(timer);
+  }, [scannerFeedback]);
+
+  // Global barcode scanner listener (for USB/Bluetooth HID scanners)
+  useEffect(() => {
+    let barcodeBuffer = '';
+    let lastKeyTime = 0;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Ignore if any modal is currently open
+      if (isCheckoutOpen || isExpenseModalOpen || isQuickSaleOpen || !!itemToOverride) {
+        return;
+      }
+
+      const target = e.target as HTMLElement | null;
+      const isInput =
+        target &&
+        (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.tagName === 'SELECT');
+
+      // If user is focused on an input element, let that input handle it
+      if (isInput) {
+        return;
+      }
+
+      if (e.key === 'Enter') {
+        const code = barcodeBuffer.trim();
+        if (code.length >= 2) {
+          e.preventDefault();
+          handleProcessBarcode(code);
+          barcodeBuffer = '';
+        }
+        return;
+      }
+
+      if (e.key.length === 1) {
+        const now = Date.now();
+        // HID Barcode scanners send keys rapidly (< 100ms)
+        if (now - lastKeyTime > 120) {
+          barcodeBuffer = '';
+        }
+        lastKeyTime = now;
+        barcodeBuffer += e.key;
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isCheckoutOpen, isExpenseModalOpen, isQuickSaleOpen, itemToOverride, handleProcessBarcode]);
+
   return (
-    <div className="h-[calc(100vh-4rem)] flex flex-col md:flex-row overflow-hidden pb-16 md:pb-0">
-      
+    <div className="h-[calc(100vh-4rem)] flex flex-col md:flex-row overflow-hidden pb-16 md:pb-0 relative">
+      {/* Barcode Scanner Floating Feedback Toast */}
+      {scannerFeedback && (
+        <div
+          className={`fixed top-16 right-6 z-50 flex items-center space-x-2.5 px-4 py-3 rounded-2xl shadow-2xl border text-xs font-bold transition-all transform animate-in fade-in slide-in-from-top-3 duration-200 ${
+            scannerFeedback.type === 'success'
+              ? 'bg-brand-slate-900 text-white border-brand-emerald-500 ring-2 ring-brand-emerald-500/30'
+              : 'bg-rose-950 text-white border-rose-500 ring-2 ring-rose-500/30'
+          }`}
+        >
+          {scannerFeedback.type === 'success' ? (
+            <div className="w-5 h-5 rounded-full bg-brand-emerald-500/20 text-brand-emerald-400 flex items-center justify-center shrink-0">
+              <Check className="w-3.5 h-3.5" />
+            </div>
+          ) : (
+            <div className="w-5 h-5 rounded-full bg-rose-500/20 text-rose-400 flex items-center justify-center shrink-0">
+              <AlertCircle className="w-3.5 h-3.5" />
+            </div>
+          )}
+          <span className="truncate max-w-xs">{scannerFeedback.message}</span>
+        </div>
+      )}
+
       {/* Left: Product Catalog */}
       <div className="flex-1 flex flex-col min-w-0 min-h-0 overflow-hidden bg-slate-50 border-r border-slate-200">
         
@@ -91,12 +254,27 @@ export const POSView: React.FC = () => {
             <div className="relative flex-1">
               <Search className="absolute left-3.5 top-3 w-4 h-4 text-slate-400" />
               <input
+                ref={searchInputRef}
                 type="text"
-                placeholder="Buscar producto por nombre o código..."
+                placeholder="Escanear código de barra o buscar producto..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-brand-emerald-500 bg-slate-50/50"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    if (search.trim()) {
+                      handleProcessBarcode(search.trim());
+                    }
+                  }
+                }}
+                className="w-full pl-10 pr-9 py-2.5 rounded-xl border border-slate-200 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-brand-emerald-500 bg-slate-50/50"
               />
+              <div 
+                className="absolute right-3 top-2.5 text-slate-400" 
+                title="Lector de código de barras activo. Puedes escanear directamente."
+              >
+                <Barcode className="w-5 h-5" />
+              </div>
             </div>
             <button
               type="button"
