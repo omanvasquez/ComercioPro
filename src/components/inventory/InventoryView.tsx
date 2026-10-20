@@ -10,7 +10,10 @@ import {
   DollarSign, 
   Banknote, 
   AlertCircle,
-  Tags
+  Tags,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown
 } from 'lucide-react';
 import { Product } from '../../types';
 import { useInventory } from '../../context/InventoryContext';
@@ -37,6 +40,8 @@ export const InventoryView: React.FC = () => {
 
   const [search, setSearch] = useState<string>('');
   const [selectedCategory, setSelectedCategory] = useState<string>('Todos');
+  const [sortField, setSortField] = useState<'name' | 'stock'>('name');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
 
   // Modals
   const [isProductModalOpen, setIsProductModalOpen] = useState<boolean>(false);
@@ -52,15 +57,51 @@ export const InventoryView: React.FC = () => {
     return ['Todos', ...Array.from(set)];
   }, [customCategories, products]);
 
+  const toggleStockSort = () => {
+    if (sortField !== 'stock') {
+      setSortField('stock');
+      setSortOrder('asc'); // Menor stock primero (0, 1, 2...)
+    } else if (sortOrder === 'asc') {
+      setSortOrder('desc'); // Mayor stock primero
+    } else {
+      setSortField('name');
+      setSortOrder('asc'); // Volver al orden alfabético
+    }
+  };
+
+  const toggleNameSort = () => {
+    if (sortField !== 'name') {
+      setSortField('name');
+      setSortOrder('asc');
+    } else {
+      setSortOrder((prev) => (prev === 'asc' ? 'desc' : 'asc'));
+    }
+  };
+
   const filteredProducts = useMemo(() => {
-    return products.filter((p) => {
+    const list = products.filter((p) => {
       const matchSearch =
         p.name.toLowerCase().includes(search.toLowerCase()) ||
         (p.barcode && p.barcode.includes(search));
       const matchCategory = selectedCategory === 'Todos' || p.category === selectedCategory;
       return matchSearch && matchCategory;
     });
-  }, [products, search, selectedCategory]);
+
+    return [...list].sort((a, b) => {
+      if (sortField === 'stock') {
+        const stockA = Number(a.stock) || 0;
+        const stockB = Number(b.stock) || 0;
+        const diff = stockA - stockB;
+        if (diff !== 0) {
+          return sortOrder === 'asc' ? diff : -diff;
+        }
+        return a.name.localeCompare(b.name);
+      } else {
+        const comp = a.name.localeCompare(b.name);
+        return sortOrder === 'asc' ? comp : -comp;
+      }
+    });
+  }, [products, search, selectedCategory, sortField, sortOrder]);
 
   const handleSaveProduct = (data: any) => {
     if (editingProduct) {
@@ -123,6 +164,26 @@ export const InventoryView: React.FC = () => {
         </div>
 
         <div className="flex items-center space-x-2 overflow-x-auto w-full sm:w-auto scrollbar-none">
+          {/* Botón rápido para ordenar por stock (menor a mayor) */}
+          <button
+            onClick={toggleStockSort}
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition whitespace-nowrap flex items-center space-x-1.5 shrink-0 ${
+              sortField === 'stock'
+                ? 'bg-amber-500 text-slate-950 font-black shadow-xs ring-1 ring-amber-600/30'
+                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+            }`}
+            title="Ordenar productos por stock (menor a mayor)"
+          >
+            <ArrowUpDown className="w-3.5 h-3.5" />
+            <span>
+              {sortField === 'stock'
+                ? (sortOrder === 'asc' ? 'Stock: Menor a Mayor 📉' : 'Stock: Mayor a Menor 📈')
+                : 'Ordenar por Stock'}
+            </span>
+          </button>
+
+          <div className="h-4 w-px bg-slate-200 shrink-0" />
+
           {categories.map((cat) => (
             <button
               key={cat}
@@ -145,12 +206,48 @@ export const InventoryView: React.FC = () => {
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="bg-slate-50/80 border-b border-slate-200 text-[11px] font-bold text-slate-400 uppercase tracking-wider">
-                  <th className="py-3 px-4">Producto</th>
+                <tr className="bg-slate-50/80 border-b border-slate-200 text-[11px] font-bold text-slate-400 uppercase tracking-wider select-none">
+                  <th 
+                    className="py-3 px-4 cursor-pointer group hover:bg-slate-100 transition"
+                    onClick={toggleNameSort}
+                    title="Clic para ordenar alfabéticamente"
+                  >
+                    <div className="flex items-center space-x-1.5">
+                      <span className={sortField === 'name' ? 'text-slate-800 font-extrabold' : ''}>Producto</span>
+                      {sortField === 'name' && (
+                        sortOrder === 'asc' 
+                          ? <ArrowUp className="w-3 h-3 text-slate-600" /> 
+                          : <ArrowDown className="w-3 h-3 text-slate-600" />
+                      )}
+                    </div>
+                  </th>
                   <th className="py-3 px-4">Anclaje / Modalidad</th>
                   <th className="py-3 px-4">Precio Venta</th>
                   <th className="py-3 px-4">Último Costo</th>
-                  <th className="py-3 px-4">Stock</th>
+                  <th 
+                    className="py-3 px-4 cursor-pointer group hover:bg-amber-50/80 transition"
+                    onClick={toggleStockSort}
+                    title="Clic para ordenar por stock (menor a mayor / mayor a menor)"
+                  >
+                    <div className="flex items-center space-x-1.5">
+                      <span className={sortField === 'stock' ? 'text-amber-900 font-black' : 'group-hover:text-amber-800'}>
+                        Stock
+                      </span>
+                      {sortField === 'stock' ? (
+                        sortOrder === 'asc' ? (
+                          <span className="inline-flex items-center text-[10px] bg-amber-100 text-amber-900 font-black px-1.5 py-0.5 rounded border border-amber-300">
+                            <ArrowUp className="w-3 h-3 mr-0.5 text-amber-800" /> Menor primero
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center text-[10px] bg-slate-200 text-slate-800 font-black px-1.5 py-0.5 rounded border border-slate-300">
+                            <ArrowDown className="w-3 h-3 mr-0.5 text-slate-700" /> Mayor primero
+                          </span>
+                        )
+                      ) : (
+                        <ArrowUpDown className="w-3.5 h-3.5 text-slate-400 group-hover:text-amber-600 transition" />
+                      )}
+                    </div>
+                  </th>
                   <th className="py-3 px-4 text-right">Acciones Rápidas</th>
                 </tr>
               </thead>
@@ -283,6 +380,15 @@ export const InventoryView: React.FC = () => {
                     </tr>
                   );
                 })}
+
+                {filteredProducts.length === 0 && (
+                  <tr>
+                    <td colSpan={6} className="py-12 text-center text-slate-400 font-medium">
+                      <Package className="w-8 h-8 mx-auto mb-2 text-slate-300" />
+                      <span>No se encontraron productos con los filtros aplicados.</span>
+                    </td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>
