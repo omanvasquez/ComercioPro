@@ -62,7 +62,7 @@ interface ReportsViewProps {
 
 export const ReportsView: React.FC<ReportsViewProps> = ({ onNavigateToPos }) => {
   const { dailySummary, weeklySalesData, weeklySummary, topSellingProducts, monthlySummary, sales, clearAllCalculations, deleteSale } = useReports();
-  const { products, wastes } = useInventory();
+  const { products, wastes, getProductPriceUSD } = useInventory();
   const { effectiveRate } = useCurrency();
   const { tenant, isOwner, isCashier } = useAuth();
   const { todayExpenses, deleteExpense, todayExpensesByMethod } = useExpenses();
@@ -225,8 +225,20 @@ export const ReportsView: React.FC<ReportsViewProps> = ({ onNavigateToPos }) => 
 
   // Total inventory valuation at replacement cost
   const inventoryValuationUSD = Math.round(
-    products.reduce((acc, p) => acc + p.costUSD * p.stock, 0) * 100
+    products.reduce((acc, p) => acc + (p.costUSD || 0) * (Math.max(0, p.stock) || 0), 0) * 100
   ) / 100;
+
+  // Total inventory valuation at current selling price (PVP)
+  const inventoryRetailValuationUSD = Math.round(
+    products.reduce((acc, p) => {
+      const stock = Math.max(0, Number(p.stock) || 0);
+      const price = getProductPriceUSD ? getProductPriceUSD(p) : (p.priceUSD || 0);
+      return acc + (price * stock);
+    }, 0) * 100
+  ) / 100;
+
+  // Ganancia potencial total de inventario si se vende todo
+  const inventoryPotentialProfitUSD = Math.max(0, Math.round((inventoryRetailValuationUSD - inventoryValuationUSD) * 100) / 100);
 
   const handleShareDailyWhatsApp = () => {
     const text = generateDailyClosingWhatsApp(
@@ -1538,16 +1550,40 @@ export const ReportsView: React.FC<ReportsViewProps> = ({ onNavigateToPos }) => 
                   </p>
 
                   <div className="space-y-3 pt-3">
+                    <div className="p-3 rounded-xl bg-blue-50/80 border border-blue-200 flex items-center justify-between">
+                      <div>
+                        <span className="text-[10px] font-bold text-blue-800 uppercase tracking-wider block">
+                          Valor en Venta Total (PVP)
+                        </span>
+                        <span className="text-base font-black text-blue-900">
+                          ${inventoryRetailValuationUSD.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </span>
+                      </div>
+                      <span className="text-[10px] text-blue-700 font-bold">Si vendieras todo</span>
+                    </div>
+
                     <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between">
                       <div>
                         <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
                           Valor Stock en Bodega
                         </span>
                         <span className="text-base font-black text-slate-900">
-                          ${inventoryValuationUSD.toFixed(2)}
+                          ${inventoryValuationUSD.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </span>
                       </div>
                       <span className="text-[10px] text-slate-500 font-medium">A costo de reposición</span>
+                    </div>
+
+                    <div className="p-3 rounded-xl bg-indigo-50/70 border border-indigo-200 flex items-center justify-between">
+                      <div>
+                        <span className="text-[10px] font-bold text-indigo-800 uppercase tracking-wider block">
+                          Ganancia Potencial de Inventario
+                        </span>
+                        <span className="text-base font-black text-indigo-700">
+                          +${inventoryPotentialProfitUSD.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </span>
+                      </div>
+                      <span className="text-[10px] text-indigo-700 font-bold">Margen total proyectado</span>
                     </div>
 
                     <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between">
