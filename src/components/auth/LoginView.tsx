@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { 
   ArrowDown,
   ArrowRight,
@@ -271,6 +271,40 @@ const LoginPortal: React.FC = () => {
 
 export const LoginView: React.FC = () => {
   const [isLoginOpen, setIsLoginOpen] = useState<boolean>(false);
+  const landingMainRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    const main = landingMainRef.current;
+    if (
+      !main ||
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches ||
+      !('IntersectionObserver' in window)
+    ) {
+      return;
+    }
+
+    const revealElements = main.querySelectorAll<HTMLElement>('[data-reveal]');
+    if (revealElements.length === 0) return;
+
+    const observer = new IntersectionObserver(
+      (entries, currentObserver) => {
+        entries.forEach((entry) => {
+          if (!entry.isIntersecting) return;
+          entry.target.classList.add('is-visible');
+          currentObserver.unobserve(entry.target);
+        });
+      },
+      { threshold: 0.12, rootMargin: '0px 0px -40px 0px' }
+    );
+
+    main.classList.add('scroll-reveal-ready');
+    revealElements.forEach((element) => observer.observe(element));
+
+    return () => {
+      observer.disconnect();
+      main.classList.remove('scroll-reveal-ready');
+    };
+  }, []);
 
   const handleContactWhatsApp = () => {
     const text = encodeURIComponent(
@@ -369,10 +403,10 @@ export const LoginView: React.FC = () => {
         </div>
       </header>
 
-      <main>
+      <main ref={landingMainRef}>
         <section id="inicio" className="overflow-hidden bg-slate-950 text-white">
           <div className="mx-auto grid max-w-7xl items-center gap-12 px-4 py-16 sm:px-6 sm:py-20 lg:grid-cols-[1.02fr_0.98fr] lg:gap-16 lg:px-8 lg:py-24">
-            <div className="relative z-10">
+            <div className="relative z-10" data-reveal>
               <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-emerald-300/25 bg-emerald-300/10 px-3.5 py-2 text-xs font-bold text-emerald-200 sm:text-sm">
                 <span className="h-2 w-2 rounded-full bg-emerald-300" />
                 Hecho para el día a día del comercio venezolano
@@ -407,7 +441,7 @@ export const LoginView: React.FC = () => {
               </div>
             </div>
 
-            <div className="relative mx-auto w-full max-w-[540px] lg:ml-auto">
+            <div className="relative mx-auto w-full max-w-[540px] lg:ml-auto" data-reveal>
               <div className="overflow-hidden rounded-xl border border-slate-700 bg-slate-900 shadow-2xl shadow-black/30">
                 <div className="flex items-center justify-between border-b border-slate-800 px-5 py-4">
                   <div className="flex items-center gap-3">
@@ -460,16 +494,16 @@ export const LoginView: React.FC = () => {
 
         <section className="border-b border-slate-200 bg-white">
           <div className="mx-auto grid max-w-7xl grid-cols-2 gap-y-5 px-4 py-6 sm:px-6 md:grid-cols-4 lg:px-8">
-            <div className="flex items-center gap-3 md:border-r md:border-slate-200 md:px-5"><Banknote className="h-5 w-5 shrink-0 text-emerald-700" /><span className="text-xs font-bold text-slate-700 sm:text-sm">Operaciones en USD y Bs</span></div>
-            <div className="flex items-center gap-3 md:border-r md:border-slate-200 md:px-5"><CreditCard className="h-5 w-5 shrink-0 text-sky-700" /><span className="text-xs font-bold text-slate-700 sm:text-sm">Métodos de pago mixtos</span></div>
-            <div className="flex items-center gap-3 md:border-r md:border-slate-200 md:px-5"><WifiOff className="h-5 w-5 shrink-0 text-amber-700" /><span className="text-xs font-bold text-slate-700 sm:text-sm">Trabajo offline-first</span></div>
-            <div className="flex items-center gap-3 md:px-5"><Smartphone className="h-5 w-5 shrink-0 text-rose-700" /><span className="text-xs font-bold text-slate-700 sm:text-sm">Celular, tablet o PC</span></div>
+            <div className="flex items-center gap-3 md:border-r md:border-slate-200 md:px-5" data-reveal><Banknote className="h-5 w-5 shrink-0 text-emerald-700" /><span className="text-xs font-bold text-slate-700 sm:text-sm">Operaciones en USD y Bs</span></div>
+            <div className="flex items-center gap-3 md:border-r md:border-slate-200 md:px-5" data-reveal><CreditCard className="h-5 w-5 shrink-0 text-sky-700" /><span className="text-xs font-bold text-slate-700 sm:text-sm">Métodos de pago mixtos</span></div>
+            <div className="flex items-center gap-3 md:border-r md:border-slate-200 md:px-5" data-reveal><WifiOff className="h-5 w-5 shrink-0 text-amber-700" /><span className="text-xs font-bold text-slate-700 sm:text-sm">Trabajo offline-first</span></div>
+            <div className="flex items-center gap-3 md:px-5" data-reveal><Smartphone className="h-5 w-5 shrink-0 text-rose-700" /><span className="text-xs font-bold text-slate-700 sm:text-sm">Celular, tablet o PC</span></div>
           </div>
         </section>
 
         <section className="mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-20 lg:px-8 lg:py-24">
           <div className="grid gap-8 lg:grid-cols-[0.8fr_1.2fr] lg:gap-16">
-            <div>
+            <div data-reveal>
               <p className="text-xs font-black uppercase text-emerald-800">El comercio real, no el ideal</p>
               <h2 className="mt-3 max-w-lg text-3xl font-black leading-tight text-slate-950 sm:text-4xl">Hecho para cómo se vende en Venezuela.</h2>
               <p className="mt-5 max-w-lg text-base leading-7 text-slate-600">
@@ -478,10 +512,10 @@ export const LoginView: React.FC = () => {
             </div>
             <div className="space-y-4">
               <div className="grid grid-cols-[1.1fr_0.9fr] gap-3">
-                <figure className="animate-rise-in group relative aspect-[4/3] min-w-0 overflow-hidden rounded-xl border border-slate-200 bg-slate-100 shadow-sm">
+                <figure className="group relative aspect-[4/3] min-w-0 overflow-hidden rounded-xl border border-slate-200 bg-slate-100 shadow-sm" data-reveal>
                   <img
-                    src="/portada-productos.webp"
-                    alt="Productos frescos organizados en estantes de un comercio"
+                    src="/portada-inventario.svg"
+                    alt="Comerciante revisando un sistema de inventario en su laptop"
                     loading="lazy"
                     decoding="async"
                     className="h-full w-full object-cover motion-safe:transition-transform motion-safe:duration-700 motion-safe:group-hover:scale-[1.025]"
@@ -490,7 +524,7 @@ export const LoginView: React.FC = () => {
                     Inventario listo para el mostrador
                   </figcaption>
                 </figure>
-                <figure className="animate-rise-in group relative mt-5 aspect-[4/3] min-w-0 overflow-hidden rounded-xl border border-slate-200 bg-slate-100 shadow-sm" style={{ animationDelay: '120ms' }}>
+                <figure className="group relative mt-5 aspect-[4/3] min-w-0 overflow-hidden rounded-xl border border-slate-200 bg-slate-100 shadow-sm" data-reveal>
                   <img
                     src="/portada-mostrador.webp"
                     alt="Comerciante atendiendo a una clienta en el mostrador"
@@ -505,22 +539,22 @@ export const LoginView: React.FC = () => {
               </div>
 
               <div className="grid gap-px overflow-hidden rounded-xl border border-slate-200 bg-slate-200 sm:grid-cols-2">
-              <article className="bg-white p-5 sm:p-6">
+              <article className="bg-white p-5 motion-safe:transition motion-safe:duration-300 motion-safe:hover:-translate-y-1 motion-safe:hover:shadow-lg sm:p-6" data-reveal>
                 <Banknote className="h-6 w-6 text-amber-700" />
                 <h3 className="mt-4 text-base font-extrabold text-slate-950">La tasa cambia. Tus precios tienen contexto.</h3>
                 <p className="mt-2 text-sm leading-6 text-slate-600">Ancla productos en dólares o bolívares, consulta la tasa disponible y usa el ajuste manual cuando tu operación lo requiera.</p>
               </article>
-              <article className="bg-white p-5 sm:p-6">
+              <article className="bg-white p-5 motion-safe:transition motion-safe:duration-300 motion-safe:hover:-translate-y-1 motion-safe:hover:shadow-lg sm:p-6" data-reveal>
                 <WifiOff className="h-6 w-6 text-emerald-700" />
                 <h3 className="mt-4 text-base font-extrabold text-slate-950">Una conexión inestable no debería parar la caja.</h3>
                 <p className="mt-2 text-sm leading-6 text-slate-600">La aplicación conserva información en el dispositivo y sincroniza con la nube cuando recupera conexión.</p>
               </article>
-              <article className="bg-white p-5 sm:p-6">
+              <article className="bg-white p-5 motion-safe:transition motion-safe:duration-300 motion-safe:hover:-translate-y-1 motion-safe:hover:shadow-lg sm:p-6" data-reveal>
                 <MessageCircle className="h-6 w-6 text-sky-700" />
                 <h3 className="mt-4 text-base font-extrabold text-slate-950">WhatsApp ya es parte del mostrador.</h3>
                 <p className="mt-2 text-sm leading-6 text-slate-600">Comparte tickets y estados de cuenta con el cliente usando mensajes preparados para WhatsApp.</p>
               </article>
-              <article className="bg-white p-5 sm:p-6">
+              <article className="bg-white p-5 motion-safe:transition motion-safe:duration-300 motion-safe:hover:-translate-y-1 motion-safe:hover:shadow-lg sm:p-6" data-reveal>
                 <LockKeyhole className="h-6 w-6 text-rose-700" />
                 <h3 className="mt-4 text-base font-extrabold text-slate-950">Cada quien ve lo que necesita.</h3>
                 <p className="mt-2 text-sm leading-6 text-slate-600">Configura acceso para cajeros con permisos distintos a los del dueño y revócalo cuando haga falta.</p>
@@ -532,7 +566,7 @@ export const LoginView: React.FC = () => {
 
         <section id="funciones" className="border-y border-slate-200 bg-white py-16 sm:py-20 lg:py-24">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-            <div className="max-w-2xl">
+            <div className="max-w-2xl" data-reveal>
               <p className="text-xs font-black uppercase text-emerald-800">Una herramienta para el día completo</p>
               <h2 className="mt-3 text-3xl font-black leading-tight text-slate-950 sm:text-4xl">De la primera venta al cierre de caja.</h2>
               <p className="mt-4 text-base leading-7 text-slate-600">Cada módulo responde a una tarea concreta del mostrador y queda conectado con el resto de la operación.</p>
@@ -540,7 +574,7 @@ export const LoginView: React.FC = () => {
 
             <div className="mt-10 grid gap-5 md:grid-cols-2">
               {modules.map(({ number, icon: Icon, title, description, details, tone }) => (
-                <article key={number} className="grid gap-4 rounded-lg border border-slate-200 bg-brand-pearl p-5 sm:grid-cols-[auto_1fr] sm:gap-5 sm:p-6">
+                <article key={number} className="grid gap-4 rounded-lg border border-slate-200 bg-brand-pearl p-5 motion-safe:transition motion-safe:duration-300 motion-safe:hover:-translate-y-1 motion-safe:hover:shadow-md sm:grid-cols-[auto_1fr] sm:gap-5 sm:p-6" data-reveal>
                   <div className="flex items-start justify-between sm:block">
                     <span className={`flex h-11 w-11 items-center justify-center rounded-lg ${tone}`}><Icon className="h-5 w-5" /></span>
                     <span className="font-mono text-xs font-bold text-slate-400 sm:mt-4 sm:block">{number}</span>
@@ -559,7 +593,7 @@ export const LoginView: React.FC = () => {
         </section>
 
         <section id="como-funciona" className="mx-auto grid max-w-7xl gap-12 px-4 py-16 sm:px-6 sm:py-20 lg:grid-cols-[0.85fr_1.15fr] lg:gap-20 lg:px-8 lg:py-24">
-          <div>
+          <div data-reveal>
             <p className="text-xs font-black uppercase text-emerald-800">Una rutina fácil de seguir</p>
             <h2 className="mt-3 text-3xl font-black leading-tight text-slate-950 sm:text-4xl">El negocio en orden, paso a paso.</h2>
             <p className="mt-5 text-base leading-7 text-slate-600">ComercioPro reúne la información que normalmente termina repartida entre la caja, una libreta y varias cuentas de WhatsApp.</p>
@@ -567,7 +601,7 @@ export const LoginView: React.FC = () => {
               Consultar cómo empezar <ArrowRight className="h-4 w-4" />
             </button>
           </div>
-          <ol className="divide-y divide-slate-200 border-y border-slate-200">
+          <ol className="divide-y divide-slate-200 border-y border-slate-200" data-reveal>
             <li className="grid grid-cols-[48px_1fr] gap-4 py-5 sm:grid-cols-[60px_1fr] sm:py-6">
               <span className="font-mono text-sm font-black text-amber-700">01</span>
               <div><h3 className="font-extrabold text-slate-950">Prepara tu catálogo</h3><p className="mt-1.5 text-sm leading-6 text-slate-600">Registra productos, categorías, costos y precios según vendas por pieza, peso o fracción.</p></div>
@@ -585,12 +619,12 @@ export const LoginView: React.FC = () => {
 
         <section className="bg-slate-950 py-16 text-white sm:py-20">
           <div className="mx-auto grid max-w-7xl gap-10 px-4 sm:px-6 lg:grid-cols-[1fr_auto] lg:items-center lg:px-8">
-            <div className="max-w-2xl">
+            <div className="max-w-2xl" data-reveal>
               <p className="text-xs font-black uppercase text-amber-300">También para el equipo</p>
               <h2 className="mt-3 text-3xl font-black leading-tight sm:text-4xl">El dueño administra. El cajero atiende.</h2>
               <p className="mt-4 text-base leading-7 text-slate-300">Autoriza usuarios de caja y asigna permisos para que puedan vender, consultar clientes y hacer el cierre del día sin acceder a las funciones de administración.</p>
             </div>
-            <div className="grid grid-cols-2 gap-3 sm:min-w-[330px]">
+            <div className="grid grid-cols-2 gap-3 sm:min-w-[330px]" data-reveal>
               <div className="rounded-lg border border-slate-700 bg-slate-900 p-4"><ShieldCheck className="h-5 w-5 text-emerald-300" /><p className="mt-3 text-sm font-bold">Acceso por roles</p><p className="mt-1 text-xs leading-5 text-slate-400">Permisos para cada función.</p></div>
               <div className="rounded-lg border border-slate-700 bg-slate-900 p-4"><BarChart3 className="h-5 w-5 text-amber-300" /><p className="mt-3 text-sm font-bold">Reportes del negocio</p><p className="mt-1 text-xs leading-5 text-slate-400">Métricas para el dueño.</p></div>
             </div>
@@ -598,13 +632,13 @@ export const LoginView: React.FC = () => {
         </section>
 
         <section id="preguntas" className="mx-auto max-w-4xl px-4 py-16 sm:px-6 sm:py-20 lg:px-8 lg:py-24">
-          <div className="text-center">
+          <div className="text-center" data-reveal>
             <CircleHelp className="mx-auto h-7 w-7 text-emerald-800" />
             <h2 className="mt-3 text-3xl font-black text-slate-950 sm:text-4xl">Preguntas frecuentes</h2>
           </div>
           <div className="mt-9 divide-y divide-slate-200 border-y border-slate-200">
             {faqs.map(({ question, answer }) => (
-              <details key={question} className="group py-5">
+              <details key={question} className="group py-5" data-reveal>
                 <summary className="flex cursor-pointer list-none items-center justify-between gap-4 text-left text-sm font-extrabold text-slate-900 sm:text-base">
                   {question}
                   <ChevronDown className="h-5 w-5 shrink-0 text-slate-500 transition group-open:rotate-180" />
@@ -617,12 +651,12 @@ export const LoginView: React.FC = () => {
 
         <section className="border-y border-amber-500/30 bg-amber-300">
           <div className="mx-auto flex max-w-7xl flex-col gap-6 px-4 py-12 sm:px-6 md:flex-row md:items-center md:justify-between lg:px-8 lg:py-14">
-            <div className="max-w-2xl">
+            <div className="max-w-2xl" data-reveal>
               <p className="text-xs font-black uppercase text-slate-700">El siguiente paso es una conversación</p>
               <h2 className="mt-2 text-2xl font-black leading-tight text-slate-950 sm:text-3xl">Cuéntanos qué tipo de comercio tienes.</h2>
               <p className="mt-2 text-sm leading-6 text-slate-800">Te orientamos sobre el acceso y cómo ComercioPro puede encajar en tu operación.</p>
             </div>
-            <button type="button" onClick={handleContactWhatsApp} className="inline-flex min-h-12 shrink-0 items-center justify-center gap-2 rounded-lg bg-slate-950 px-5 py-3 text-sm font-black text-white transition hover:bg-slate-800">
+            <button type="button" onClick={handleContactWhatsApp} className="inline-flex min-h-12 shrink-0 items-center justify-center gap-2 rounded-lg bg-slate-950 px-5 py-3 text-sm font-black text-white transition hover:bg-slate-800" data-reveal>
               <MessageCircle className="h-4 w-4" /> Hablar por WhatsApp <ArrowRight className="h-4 w-4" />
             </button>
           </div>

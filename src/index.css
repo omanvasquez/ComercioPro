@@ -24,9 +24,26 @@
   animation: rise-in 600ms ease-out both;
 }
 
+.scroll-reveal-ready [data-reveal] {
+  opacity: 0;
+  transform: translateY(18px);
+  transition:
+    opacity 650ms cubic-bezier(0.2, 0.65, 0.3, 1),
+    transform 650ms cubic-bezier(0.2, 0.65, 0.3, 1);
+}
+
+.scroll-reveal-ready [data-reveal].is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .animate-rise-in {
+  .animate-rise-in,
+  .scroll-reveal-ready [data-reveal] {
     animation: none;
+    opacity: 1;
+    transform: none;
+    transition: none;
   }
 }
 
